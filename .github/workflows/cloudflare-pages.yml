@@ -1,0 +1,37 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Enable Corepack & install deps
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Build project (Nuxt → Cloudflare Pages preset)
+        env:
+          NITRO_PRESET: 'cloudflare-pages'
+        run: pnpm build
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: simpler-worklog
+          directory: .output/public
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }} 
