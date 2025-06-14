@@ -75,7 +75,10 @@
         </div>
 
         <h4 class="font-semibold text-sm mt-4">My Active Issues</h4>
-        <ul class="border rounded max-h-48 overflow-y-auto mb-2 text-sm">
+        <ul
+          ref="issuesList"
+          class="border rounded max-h-50 overflow-y-auto mb-2 text-sm"
+        >
           <li
             v-for="iss in activeIssues"
             :key="iss.key"
@@ -85,23 +88,19 @@
             <span class="font-mono font-semibold">{{ iss.key }}</span>
             <span class="truncate">{{ iss.summary }}</span>
           </li>
+
+          <!-- Sentinel row for IntersectionObserver. Shows spinner while loading -->
+          <li
+            v-if="pageStart < issuesTotal"
+            ref="loadMoreTrigger"
+            class="px-2 py-1 text-center"
+          >
+            <span
+              v-if="loadingMore"
+              class="loading loading-spinner text-primary"
+            />
+          </li>
         </ul>
-        <div v-if="issuesTotal > pageSize" class="flex justify-end gap-2">
-          <button
-            class="btn btn-xs"
-            :disabled="pageStart === 0"
-            @click="prevPage"
-          >
-            Prev
-          </button>
-          <button
-            class="btn btn-xs"
-            :disabled="pageStart + pageSize >= issuesTotal"
-            @click="nextPage"
-          >
-            Next
-          </button>
-        </div>
       </div>
 
       <!-- Manual Add -->
@@ -134,7 +133,15 @@
           class="text-xs opacity-80 mt-1 truncate h-5"
           :style="{ visibility: searchedIssue && !manualError ? 'visible' : 'hidden' }"
         >
-          {{ searchedIssue ? searchedIssue.summary : '' }}
+          <a
+            v-if="searchedIssue"
+            :href="`https://linemanwongnai.atlassian.net/browse/${searchedIssue.key}`"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link"
+          >
+            {{ searchedIssue.summary }}
+          </a>
         </p>
         <ul
           v-if="suggestions.length"
@@ -193,6 +200,11 @@ const activeIssues = ref([]);
 const issuesTotal = ref(0);
 const pageStart = ref(0);
 const pageSize = 10;
+
+// Infinite-scroll state
+const loadingMore = ref(false);
+const loadMoreTrigger = ref(null);
+let loadObserver = null;
 
 // Central work-log cache
 const { getLogs, fetchMonth, setLogs } = useWorklogStore();
@@ -276,6 +288,25 @@ onMounted(() => {
     dlg.value.showModal();
   }
   prefetchPresetSummaries();
+
+  // Observe sentinel row for infinite scroll
+  watch(
+    () => loadMoreTrigger.value,
+    (el) => {
+      if (loadObserver) loadObserver.disconnect();
+      if (!el) return;
+      loadObserver = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            loadMore();
+          }
+        },
+        { root: null, threshold: 1 }
+      );
+      loadObserver.observe(el);
+    },
+    { immediate: true }
+  );
 });
 
 async function fetchLogs() {
@@ -344,10 +375,11 @@ async function prefetchPresetSummaries() {
   );
 }
 
-async function loadActiveIssues() {
+async function loadActiveIssues(append = false) {
   try {
+    if (append) loadingMore.value = true;
     const body = {
-      jql: "assignee = currentUser() AND statusCategory != Done AND (sprint in openSprints() OR sprint in futureSprints()) ORDER BY updated DESC",
+      jql: "assignee = currentUser() AND updated >= -30d ORDER BY updated DESC",
       fields: ["summary"],
       maxResults: pageSize,
       startAt: pageStart.value,
@@ -356,26 +388,44 @@ async function loadActiveIssues() {
       method: "POST",
       body: JSON.stringify(body),
     });
-    activeIssues.value =
+    const newItems =
       data.issues?.map((i) => ({ key: i.key, summary: i.fields.summary })) ??
       [];
+
+    if (append) {
+      activeIssues.value.push(...newItems);
+    } else {
+      activeIssues.value = newItems;
+    }
+
     issuesTotal.value = data.total ?? activeIssues.value.length;
+    pageStart.value += newItems.length;
   } catch (err) {
     console.error(err);
+  } finally {
+    loadingMore.value = false;
   }
 }
 
-function prevPage() {
-  pageStart.value = Math.max(0, pageStart.value - pageSize);
-  loadActiveIssues();
+// Triggered by IntersectionObserver when sentinel enters the viewport
+async function loadMore() {
+  if (loadingMore.value) return;
+  if (pageStart.value >= issuesTotal.value) return;
+  await loadActiveIssues(true);
 }
 
-function nextPage() {
-  if (pageStart.value + pageSize < issuesTotal.value) {
-    pageStart.value += pageSize;
-    loadActiveIssues();
+// Reload active issues list each time the modal opens
+watch(
+  () => props.visible,
+  (v) => {
+    if (v) {
+      pageStart.value = 0;
+      activeIssues.value = [];
+      issuesTotal.value = 0;
+      loadActiveIssues();
+    }
   }
-}
+);
 
 function createWorklog(issueKey, hours, startedIso) {
   const started = dayjs(props.date)
@@ -453,16 +503,6 @@ function onIssueSelect(issue) {
   // Focus could be handled by ref but omitted here for brevity
 }
 
-watch(
-  () => props.visible,
-  (v) => {
-    if (v) {
-      pageStart.value = 0;
-      loadActiveIssues();
-    }
-  }
-);
-
 function onDelete(log) {
   // Mark for deletion or remove if it is newly added in this session
   if (log.isNew) {
@@ -537,6 +577,7 @@ watch(issueInput, (val) => {
 
 onBeforeUnmount(() => {
   debouncedLookup.cancel();
+  if (loadObserver) loadObserver.disconnect();
 });
 
 async function addManual() {
@@ -695,8 +736,20 @@ function resetModalState() {
   suggestions.value = [];
   skipNextLookup.value = false;
   unsaved.value = false;
+
+  // Reset infinite scroll state to avoid duplicate observers after reopen
   pageStart.value = 0;
   activeIssues.value = [];
+  issuesTotal.value = 0;
+  loadingMore.value = false;
+
+  if (loadObserver) {
+    loadObserver.disconnect();
+    loadObserver = null;
+  }
+
+  loadMoreTrigger.value = null; // ensure new observer will be attached fresh
+
   logs.value = [];
 }
 
