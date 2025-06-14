@@ -65,10 +65,11 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { computed, watch, ref } from 'vue'
+import { computed, watch } from 'vue'
 import { useCalendar } from '~/composables/useCalendar'
 import { useWorklogStore } from '~/composables/useWorklogStore'
 import { useJiraCredentials } from '~/composables/useJiraCredentials'
+import { useCalendarLoading } from '~/composables/useCalendarLoading'
 
 // Declare emitted event in runtime string-array format
 const emit = defineEmits(['day-selected'])
@@ -78,9 +79,14 @@ const { getHours, fetchMonth } = useWorklogStore()
 
 // Disable calendar interactions until Jira credentials are set
 const { email, token } = useJiraCredentials()
-const hasCreds = computed(() => !!email.value && !!token.value)
+const hasCreds = computed(() => {
+  if (import.meta.server)
+    return true
+  return !!email.value && !!token.value
+})
 
-const loading = ref(false)
+// Use shared loading ref so other components can react to calendar fetch status
+const { loading } = useCalendarLoading()
 
 // NEW: fetch visible months once credentials are provided
 watch(

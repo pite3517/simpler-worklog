@@ -6,7 +6,7 @@
         <span class="text-lg font-bold">Simpler Worklog</span>
       </div>
       <div class="flex-none">
-        <button class="btn btn-soft btn-sm ml-1" @click="showAuthModal = true">
+        <button class="btn btn-soft btn-sm ml-1" :disabled="calendarLoading" @click="showAuthModal = true">
           <ClientOnly>
             <template #fallback>Set Token</template>
             <span v-if="token">Change Token</span>
@@ -34,9 +34,11 @@ import { onMounted, ref } from 'vue'
 import { useJiraCredentials } from '~/composables/useJiraCredentials'
 import AuthenticationModal from '~/components/AuthenticationModal.vue'
 import ToastProvider from '~/components/ToastProvider.vue'
+import { useCalendarLoading } from '~/composables/useCalendarLoading'
 
 const { token } = useJiraCredentials()
 const showAuthModal = ref(false)
+const { loading: calendarLoading } = useCalendarLoading()
 
 // On first client render, open modal if token is missing
 onMounted(() => {

@@ -17,6 +17,7 @@
           type="email"
           placeholder="you@lmwn.com"
           class="input input-bordered w-full"
+          @keyup.enter="save"
         >
       </div>
 
@@ -35,6 +36,7 @@
             :type="showToken ? 'text' : 'password'"
             placeholder="API token"
             class="input input-bordered flex-grow min-w-0"
+            @keyup.enter="save"
           >
           <button class="btn btn-square" type="button" @click="showToken = !showToken">
             <span v-if="showToken">🙈</span>

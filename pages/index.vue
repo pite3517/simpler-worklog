@@ -1,9 +1,11 @@
 <template>
   <div>
     <div class="mb-4 flex justify-end">
-      <button class="btn btn-secondary" :disabled="autoFilling || !hasCreds" @click="confirmAutoFill">
-        Auto-Fill Ceremonies
-      </button>
+      <ClientOnly>
+        <button class="btn btn-secondary" :disabled="autoFilling || !hasCreds || calendarLoading" @click="confirmAutoFill">
+          Auto-Fill Ceremonies
+        </button>
+      </ClientOnly>
     </div>
     <CalendarMonth ref="calRef" @day-selected="onDaySelected" />
     <WorklogModal :visible="showWorklog" :date="selectedDate" @close="showWorklog = false" />
@@ -30,6 +32,7 @@ import timezone from 'dayjs/plugin/timezone'
 import isoWeek from 'dayjs/plugin/isoWeek'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 import { useJiraCredentials } from '~/composables/useJiraCredentials'
+import { useCalendarLoading } from '~/composables/useCalendarLoading'
 
 // Extend dayjs with required plugins once
 dayjs.extend(utc)
@@ -47,7 +50,17 @@ const { getLogs, fetchMonth, addHours, setLogs } = useWorklogStore()
 
 // Check if Jira credentials are present
 const { email, token } = useJiraCredentials()
-const hasCreds = computed(() => !!email.value && !!token.value)
+const hasCreds = computed(() => {
+  // When rendering on the server we cannot access localStorage, so we assume
+  // missing credentials to avoid prematurely enabling privileged controls.
+  // The computed will re-evaluate on the client once hydrated.
+  if (import.meta.server)
+    return false
+  return !!email.value && !!token.value
+})
+
+// Shared calendar loading flag
+const { loading: calendarLoading } = useCalendarLoading()
 
 function onDaySelected(date) {
   if (!hasCreds.value) return
@@ -142,7 +155,7 @@ async function autoFillCeremonies () {
     // Refresh store to include newly created logs so modal + duplicate checks stay in sync
     await fetchMonth(monthStart.toDate())
 
-    alert('Ceremony work-logs have been added.')
+    alert('Ceremony worklogs have been added.')
   } catch (err) {
     console.error(err)
     alert('Failed to auto-fill ceremonies. See console for details.')

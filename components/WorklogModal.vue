@@ -2,7 +2,7 @@
   <dialog ref="dlg" class="modal" @click.self="attemptClose">
     <div class="modal-box w-full max-w-3xl">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="font-bold text-lg">Worklogs – {{ isoDate }}</h3>
+        <h3 class="font-bold text-lg">{{ formattedDate }}</h3>
         <span class="text-xl font-semibold">{{ totalHours.toFixed(2) }}h</span>
       </div>
 
@@ -168,11 +168,13 @@ import { useWorklogStore } from "~/composables/useWorklogStore";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import weekOfYear from "dayjs/plugin/weekOfYear";
 import debounce from "lodash.debounce";
 
 // Initialise Day.js with timezone support
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(weekOfYear);
 
 const props = defineProps(["visible", "date"]);
 const emit = defineEmits(["close"]);
@@ -239,15 +241,14 @@ const debouncedLookup = debounce(async (term) => {
   }
 }, 300);
 
-// Compute the selected calendar day in a time-zone-agnostic way. We purposely
-// avoid converting with .tz() here, because the incoming `props.date` is
-// already a local-midnight value from the calendar component. Converting it
-// again may shift the date when the browser runs in a different zone.  
-// By formatting immediately we keep only the plain `YYYY-MM-DD` portion,
-// which is what we use for equality checks below.
-const isoDate = computed(() =>
-  props.date ? dayjs(props.date).format("YYYY-MM-DD") : ""
-);
+// Human-readable header: "Mon, 10 Jun (1st Wk/2nd Wk)" based on week parity
+const formattedDate = computed(() => {
+  if (!props.date) return "";
+  const d = dayjs(props.date);
+  const weekNo = d.week();
+  const weekLabel = weekNo % 2 === 1 ? "2nd Week" : "1st Week";
+  return `${d.format("ddd, DD MMM")} (${weekLabel})`;
+});
 
 const displayedLogs = computed(() => logs.value.filter(l => !l.deleted));
 
@@ -307,16 +308,16 @@ async function fetchLogs() {
 const presets = [
   { label: "Daily Stand-up",  hours: 0.25, issueKey: "ADM-17" },
   { label: "Health Check",    hours: 0.5,  issueKey: "ADM-18" },
-  { label: "Daily General Admin", hours: 1, issueKey: "ADM-6" },
   { label: "Grooming",         hours: 1, issueKey: "ADM-19" },
   { label: "Knowledge Sharing", hours: 1, issueKey: "ADM-20" },
   { label: "Planning",         hours: 1, issueKey: "ADM-16" },
   { label: "Retrospective",    hours: 1, issueKey: "ADM-18" },
-  { label: "Holiday",          hours: 8, issueKey: "ADM-1" },
+
 ];
 
 // Common presets that pre-fill manual section (no immediate add)
 const commonPresets = [
+  { label: 'Holiday', issueKey: 'ADM-1', defaultHours: 8 },
   { label: 'Annual Leave', issueKey: 'ADM-2', defaultHours: 8 },
   { label: 'Sick Leave', issueKey: 'ADM-3', defaultHours: 8 },
   { label: 'General Admin', issueKey: 'ADM-6', defaultHours: 1 },
