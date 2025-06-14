@@ -6,7 +6,7 @@
         <span class="text-lg font-bold">Simpler Worklog</span>
       </div>
       <div class="flex-none">
-        <button class="btn btn-soft btn-sm" @click="showAuthModal = true">
+        <button class="btn btn-soft btn-sm ml-1" @click="showAuthModal = true">
           <ClientOnly>
             <template #fallback>Set Token</template>
             <span v-if="token">Change Token</span>
