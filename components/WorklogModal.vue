@@ -156,6 +156,17 @@
             <span class="font-mono font-semibold">{{ s.key }}</span>
             <span class="truncate">{{ s.summary }}</span>
           </li>
+          <!-- Sentinel row for IntersectionObserver. Shows spinner while loading -->
+          <li
+            v-if="suggestionPageStart < suggestionTotal"
+            ref="suggestionsLoadMoreTrigger"
+            class="px-2 py-1 text-center"
+          >
+            <span
+              v-if="suggestionLoadingMore"
+              class="loading loading-spinner text-primary"
+            />
+          </li>
         </ul>
       </div>
 
@@ -206,17 +217,26 @@ const loadingMore = ref(false);
 const loadMoreTrigger = ref(null);
 let loadObserver = null;
 
-// Central work-log cache
-const { getLogs, fetchMonth, setLogs } = useWorklogStore();
-
 // Manual issue search state
 const searchedIssue = ref(null);
 const searchLoading = ref(false);
 const suggestions = ref([]);
 const skipNextLookup = ref(false);
 
+// Suggestions pagination state (for infinite scroll within search results)
+const suggestionPageStart = ref(0);
+const suggestionPageSize = 10;
+const suggestionTotal = ref(0);
+const suggestionLoadingMore = ref(false);
+const suggestionsLoadMoreTrigger = ref(null);
+let suggestionsObserver = null;
+const currentSuggestionTerm = ref('');
+
 // Map of issueKey -> real Jira summary (fetched once on mount)
 const presetSummaries = reactive({});
+
+// Central work-log cache
+const { getLogs, fetchMonth, setLogs } = useWorklogStore();
 
 // Debounced lookup function using lodash.debounce (500 ms)
 const debouncedLookup = debounce(async (term) => {
@@ -230,11 +250,15 @@ const debouncedLookup = debounce(async (term) => {
       searchedIssue.value = { key: data.key, summary: data.fields.summary };
       manualError.value = "";
     } else {
-      // Generic search for suggestions (top 10)
+      // Generic search for suggestions with pagination (first page)
+      currentSuggestionTerm.value = term;
+      suggestionPageStart.value = 0;
+      suggestionTotal.value = 0;
       const body = {
-        jql: `text ~ "${term}*" ORDER BY updated DESC`,
+        jql: `summary ~ "${term}" ORDER BY updated DESC`,
         fields: ["summary"],
-        maxResults: 10,
+        maxResults: suggestionPageSize,
+        startAt: suggestionPageStart.value,
       };
       const res = await jiraFetch("rest/api/3/search", {
         method: "POST",
@@ -242,6 +266,8 @@ const debouncedLookup = debounce(async (term) => {
       });
       suggestions.value =
         res.issues?.map((i) => ({ key: i.key, summary: i.fields.summary })) ?? [];
+      suggestionTotal.value = res.total ?? suggestions.value.length;
+      suggestionPageStart.value += suggestions.value.length;
       // Reset single search result until exact key chosen
       searchedIssue.value = null;
     }
@@ -289,7 +315,7 @@ onMounted(() => {
   }
   prefetchPresetSummaries();
 
-  // Observe sentinel row for infinite scroll
+  // Observe sentinel rows for infinite scroll in both Active Issues and Suggestions lists
   watch(
     () => loadMoreTrigger.value,
     (el) => {
@@ -304,6 +330,25 @@ onMounted(() => {
         { root: null, threshold: 1 }
       );
       loadObserver.observe(el);
+    },
+    { immediate: true }
+  );
+
+  // Suggestions observer
+  watch(
+    () => suggestionsLoadMoreTrigger.value,
+    (el) => {
+      if (suggestionsObserver) suggestionsObserver.disconnect();
+      if (!el) return;
+      suggestionsObserver = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            loadMoreSuggestions();
+          }
+        },
+        { root: null, threshold: 1 }
+      );
+      suggestionsObserver.observe(el);
     },
     { immediate: true }
   );
@@ -578,6 +623,7 @@ watch(issueInput, (val) => {
 onBeforeUnmount(() => {
   debouncedLookup.cancel();
   if (loadObserver) loadObserver.disconnect();
+  if (suggestionsObserver) suggestionsObserver.disconnect();
 });
 
 async function addManual() {
@@ -751,6 +797,17 @@ function resetModalState() {
   loadMoreTrigger.value = null; // ensure new observer will be attached fresh
 
   logs.value = [];
+
+  // Reset suggestions pagination / observer state
+  suggestionPageStart.value = 0;
+  suggestionTotal.value = 0;
+  suggestionLoadingMore.value = false;
+  currentSuggestionTerm.value = '';
+  if (suggestionsObserver) {
+    suggestionsObserver.disconnect();
+    suggestionsObserver = null;
+  }
+  suggestionsLoadMoreTrigger.value = null;
 }
 
 // When user clicks common preset, fill manual fields but do not add log yet
@@ -793,5 +850,33 @@ async function fillMissingSummaries() {
       }
     })
   )
+}
+
+async function loadMoreSuggestions() {
+  if (suggestionLoadingMore.value) return;
+  if (suggestionPageStart.value >= suggestionTotal.value) return;
+  suggestionLoadingMore.value = true;
+  try {
+    const body = {
+      jql: `summary ~ "${currentSuggestionTerm.value}" ORDER BY updated DESC`,
+      fields: ["summary"],
+      maxResults: suggestionPageSize,
+      startAt: suggestionPageStart.value,
+    };
+    const res = await jiraFetch("rest/api/3/search", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    const newItems =
+      res.issues?.map((i) => ({ key: i.key, summary: i.fields.summary })) ?? [];
+    suggestions.value.push(...newItems);
+
+    suggestionPageStart.value += newItems.length;
+    suggestionTotal.value = res.total ?? suggestionTotal.value;
+  } catch (err) {
+    console.error(err);
+  } finally {
+    suggestionLoadingMore.value = false;
+  }
 }
 </script>
