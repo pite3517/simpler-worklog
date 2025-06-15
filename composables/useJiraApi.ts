@@ -27,6 +27,7 @@ export async function jiraFetch<T = unknown>(path: string, init: RequestInit = {
       const retry = parseInt(res.headers.get('Retry-After') || '60', 10)
       addCooldownToast(retry)
     } else {
+      console.log('Jira request failed', res)
       addToast(`Jira request failed (${res.status})`, 'error')
     }
     throw new Error(`Jira API error ${res.status}`)

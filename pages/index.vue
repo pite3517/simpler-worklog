@@ -26,6 +26,7 @@ import WorklogModal from '~/components/WorklogModal.vue'
 import { ref, computed } from 'vue'
 import { jiraFetch } from '~/composables/useJiraApi'
 import { useWorklogStore } from '~/composables/useWorklogStore'
+import { useToastStore } from '~/composables/useToastStore'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
@@ -47,6 +48,7 @@ const calRef = ref(null)
 
 // Access global work-log store helpers
 const { getLogs, fetchMonth, addHours, setLogs } = useWorklogStore()
+const { addToast } = useToastStore()
 
 // Check if Jira credentials are present
 const { email, token } = useJiraCredentials()
@@ -71,7 +73,9 @@ function onDaySelected(date) {
 // ---------------- Auto-Fill Ceremonies -------------------------------------
 function confirmAutoFill () {
   if (autoFilling.value || !hasCreds.value) return
-  if (confirm('This will automatically add ceremony work-logs for the current month. Continue?')) {
+  const anchorDate = calRef.value?.getAnchor?.() ?? new Date()
+  const monthLabel = dayjs(anchorDate).format('MMM YYYY')
+  if (confirm(`This will automatically add ceremony worklogs for ${monthLabel}. Continue?`)) {
     autoFillCeremonies()
   }
 }
@@ -155,10 +159,10 @@ async function autoFillCeremonies () {
     // Refresh store to include newly created logs so modal + duplicate checks stay in sync
     await fetchMonth(monthStart.toDate())
 
-    alert('Ceremony worklogs have been added.')
+    addToast(`Ceremony worklogs have been added for ${monthStart.format('MMM YYYY')}.`, 'success')
   } catch (err) {
     console.error(err)
-    alert('Failed to auto-fill ceremonies. See console for details.')
+    addToast('Failed to auto-fill ceremonies. See console for details.', 'error')
   } finally {
     autoFilling.value = false
   }

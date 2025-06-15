@@ -108,6 +108,7 @@
         <h4 class="font-semibold text-sm mb-2">Manual Add</h4>
         <div class="flex items-center gap-2 flex-wrap">
           <input
+            ref="manualInput"
             v-model="issueInput"
             type="text"
             placeholder="LM-xxxxx or URL"
@@ -180,14 +181,16 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, watch, onMounted, computed, toRefs, onBeforeUnmount, reactive } from "vue";
+import { ref, watch, onMounted, computed, toRefs, onBeforeUnmount, reactive, nextTick } from "vue";
 import { jiraFetch } from "~/composables/useJiraApi";
 import { useWorklogStore } from "~/composables/useWorklogStore";
+import { useToastStore } from "~/composables/useToastStore";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import debounce from "lodash.debounce";
+import { useFocus } from "@vueuse/core";
 
 // Initialise Day.js with timezone support
 dayjs.extend(utc);
@@ -237,6 +240,21 @@ const presetSummaries = reactive({});
 
 // Central work-log cache
 const { getLogs, fetchMonth, setLogs } = useWorklogStore();
+const { addToast } = useToastStore();
+
+// Autofocus handling for Manual Add input
+const manualInput = ref(null);
+const { focused: manualFocused } = useFocus(manualInput);
+
+function focusManual() {
+  // Run after next tick & microtasks to avoid DaisyUI modal stealing focus
+  nextTick(() => {
+    setTimeout(() => {
+      manualFocused.value = true;
+      manualInput.value?.focus({ preventScroll: true });
+    }, 20); // slight delay to ensure dialog internal focus finishes
+  });
+}
 
 // Debounced lookup function using lodash.debounce (500 ms)
 const debouncedLookup = debounce(async (term) => {
@@ -298,6 +316,11 @@ watch(
     if (!dlg.value) return;
     if (v && props.date) {
       if (!dlg.value.open) dlg.value.showModal();
+
+      // Focus ASAP once dialog is open
+      focusManual();
+
+      // Load logs, then re-apply focus (network latency may have shifted focus)
       await fetchLogs();
     } else if (!v) {
       if (dlg.value.open) dlg.value.close();
@@ -747,6 +770,7 @@ async function saveChanges() {
 
     await fetchLogs()
     unsaved.value = false
+    addToast(`Worklogs saved for ${formattedDate.value}`, 'success')
     // Auto-close modal after successful save
     attemptClose()
   } catch (err) {

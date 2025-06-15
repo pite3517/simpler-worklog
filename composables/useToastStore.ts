@@ -3,13 +3,13 @@ import { reactive } from 'vue'
 export interface Toast {
   id: number
   message: string
-  type: 'error' | 'warn' | 'info' | 'cooldown'
+  type: 'error' | 'warn' | 'info' | 'cooldown' | 'success'
   expiresAt?: number // epoch ms for auto-remove or countdown
 }
 
 const toasts = reactive<Toast[]>([])
 
-function addToast(message: string, type: Toast['type'] = 'info', duration = 5000) {
+function addToast(message: string, type: Toast['type'] = 'info', duration = 4000) {
   const id = Date.now() + Math.random()
   const toast: Toast = { id, message, type }
   if (duration > 0) toast.expiresAt = Date.now() + duration

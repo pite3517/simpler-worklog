@@ -3,10 +3,11 @@
     <div
       v-for="t in toasts"
       :key="t.id"
+      class="gap-1"
       :class="['alert', 'shadow-lg', variantClass(t.type)]">
       <span v-if="t.type !== 'cooldown'">{{ t.message }}</span>
       <span v-else>Rate limited. Retry in {{ remaining(t) }}s</span>
-      <button class="btn btn-xs btn-ghost ml-2" @click="remove(t.id)">✕</button>
+      <button class="btn btn-xs btn-ghost" @click="remove(t.id)">✕</button>
     </div>
   </div>
 </template>
@@ -35,6 +36,8 @@ function variantClass(type) {
       return 'alert-warning'
     case 'info':
       return 'alert-info'
+    case 'success':
+      return 'alert-success'
     default:
       return 'alert-info'
   }
