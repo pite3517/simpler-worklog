@@ -11,7 +11,7 @@ export default defineNuxtConfig({
   css: ["~/assets/app.css"],
   app: {
     head: {
-      title: 'Simpler Worklog',
+      title: 'Workly',
       htmlAttrs: {
         'data-theme': 'dracula',
       },

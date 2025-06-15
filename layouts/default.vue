@@ -3,7 +3,7 @@
     <!-- Top navigation bar -->
     <div class="navbar bg-neutral text-neutral-content">
       <div class="flex-1 px-2 lg:flex-none">
-        <span class="text-lg font-bold">Simpler Worklog</span>
+        <span class="text-lg font-bold">Workly</span>
       </div>
       <div class="flex-none">
         <button class="btn btn-soft btn-sm ml-1" :disabled="calendarLoading" @click="showAuthModal = true">
