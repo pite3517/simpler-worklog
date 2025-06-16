@@ -75,7 +75,7 @@ import { useCalendarLoading } from '~/composables/useCalendarLoading'
 const emit = defineEmits(['day-selected'])
 
 const { anchor, days, prevMonth, nextMonth } = useCalendar()
-const { getHours, fetchMonth } = useWorklogStore()
+const { getHours, fetchMonth, isRecentlyUpdated, getHighlightColor } = useWorklogStore()
 
 // Disable calendar interactions until Jira credentials are set
 const { email, token } = useJiraCredentials()
@@ -198,18 +198,42 @@ function cellClass(day) {
     ? '' // removed ring highlight; date number will handle highlighting
     : ''
 
+  // Transition utilities
+  const flashTrans = ' transition-colors duration-[500ms] hover:transition-none '
+  const noTrans = ' transition-none '
+
   // Weekend cells remain non-clickable
-  if (day.isWeekend) return `${today}bg-base-200 text-base-content/50 cursor-not-allowed`
+  if (day.isWeekend) {
+    return `${today}${noTrans}bg-base-200 text-base-content/50 cursor-not-allowed`
+  }
 
   // Prefix for days outside the anchor month (dim the text)
   const extra = day.inCurrentMonth ? '' : 'text-base-content/30 '
 
   const hours = getHours(day.date)
-  if (hours >= 8) return `${today}${extra}bg-success/20 hover:bg-success/30 cursor-pointer`
-  if (hours > 0) return `${today}${extra}bg-warning/20 hover:bg-warning/30 cursor-pointer`
 
-  // No worklogs yet
-  return `${today}${extra}bg-base-100 hover:bg-primary/10 cursor-pointer`
+  // Determine final colour classes based on hours logged
+  let finalBg = 'bg-base-100'
+  let finalHover = 'hover:bg-primary/10'
+
+  if (hours >= 8) {
+    finalBg = 'bg-success/20'
+    finalHover = 'hover:bg-success/30'
+  } else if (hours > 0) {
+    finalBg = 'bg-warning/20'
+    finalHover = 'hover:bg-warning/30'
+  }
+
+  // If recently updated, show higher-opacity first colour, then fade to final
+  if (isRecentlyUpdated(day.date)) {
+    const color = getHighlightColor(day.date)
+    const highlightBg = color === 'success' ? 'bg-success/60' : color === 'warning' ? 'bg-warning/60' : 'bg-neutral/60'
+
+    return `${today}${extra}${flashTrans}${highlightBg} cursor-pointer`
+  }
+
+  // Normal rendering (not recently updated)
+  return `${today}${extra}${noTrans}${finalBg} ${finalHover} cursor-pointer`
 }
 
 function getAnchor() {

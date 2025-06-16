@@ -21,6 +21,10 @@ const loadedMonths = new Set<string>();
 // Keyed by yyyy-mm-dd in local time (ISO date string).
 const hoursByDate = reactive<Record<string, number>>({});
 
+// Track dates whose work-logs were just saved for transient UI highlight
+const recentlyUpdated = reactive<Record<string, boolean>>({});
+const highlightColorByDate = reactive<Record<string, 'success' | 'warning' | 'neutral'>>({});
+
 export function useWorklogStore() {
   function setHours(date: Date, hours: number) {
     const key = dayjs(date).format("YYYY-MM-DD");
@@ -157,6 +161,49 @@ export function useWorklogStore() {
     loadedMonths.clear()
   }
 
+  function determineColor(hours: number): 'success' | 'warning' | 'neutral' {
+    if (hours >= 8) return 'success';
+    if (hours > 0) return 'warning';
+    return 'neutral';
+  }
+
+  /** Mark a date as just updated so UI can show a short highlight.
+   *  Provide both previous and new hours to decide which colour to flash.
+   *  If colour is changing to a coloured state (success/warning), flash the NEW full colour.
+   *  Otherwise (colour removed or unchanged), flash the previous full colour (or neutral).
+   */
+  function markUpdated(date: Date, prevHours: number, newHours: number) {
+    const key = dayjs(date).format("YYYY-MM-DD");
+    recentlyUpdated[key] = true;
+    const prevColor = determineColor(prevHours);
+    const newColor = determineColor(newHours);
+
+    // Decide which colour to flash
+    let flashColor: 'success' | 'warning' | 'neutral' = prevColor;
+    if (newColor !== prevColor) {
+      // If transitioning to a coloured state, use new colour; if transitioning to neutral, keep previous.
+      flashColor = newColor === 'neutral' ? prevColor : newColor;
+    }
+
+    highlightColorByDate[key] = flashColor;
+
+    // Remove the flag & colour after 0.3s so the CSS transition can fade to new state
+    setTimeout(() => {
+      delete recentlyUpdated[key];
+      delete highlightColorByDate[key];
+    }, 700);
+  }
+
+  function getHighlightColor(date: Date): 'success' | 'warning' | 'neutral' {
+    const key = dayjs(date).format("YYYY-MM-DD");
+    return highlightColorByDate[key] ?? 'neutral';
+  }
+
+  function isRecentlyUpdated(date: Date): boolean {
+    const key = dayjs(date).format("YYYY-MM-DD");
+    return !!recentlyUpdated[key];
+  }
+
   return {
     hoursByDate,
     logsByDate,
@@ -167,5 +214,8 @@ export function useWorklogStore() {
     getLogs,
     fetchMonth,
     clearAll,
+    markUpdated,
+    getHighlightColor,
+    isRecentlyUpdated,
   };
 }

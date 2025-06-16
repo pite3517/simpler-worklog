@@ -271,7 +271,7 @@ const presetSummaries = reactive({});
 const presetIssueTypes = reactive({});
 
 // Central work-log cache
-const { getLogs, fetchMonth, setLogs } = useWorklogStore();
+const { getLogs, fetchMonth, setLogs, markUpdated, getHours } = useWorklogStore();
 const { addToast } = useToastStore();
 
 // Autofocus handling for Manual Add input
@@ -805,6 +805,8 @@ function saveChanges() {
 
   // Capture a stable reference to the current logs array BEFORE the modal state may reset
   const logsSnapshot = logs.value;
+  // Snapshot the current date so async save logic isn't affected if the modal is later reused for another day
+  const saveDate = props.date;
 
   // Fire-and-forget async save operation using the snapshot to avoid it being cleared by resetModalState
   ;(async () => {
@@ -815,7 +817,7 @@ function saveChanges() {
       // Deterministic insertion order
       createOps.sort((a, b) => a.id.localeCompare(b.id));
 
-      const startedStr = dayjs(props.date)
+      const startedStr = dayjs(saveDate)
         .tz('Asia/Bangkok')
         .hour(9)
         .minute(0)
@@ -849,9 +851,12 @@ function saveChanges() {
         delete l.deleted;
       });
 
+      // Capture hours prior to updating the store so highlight uses previous colour
+      const prevHours = getHours(saveDate);
+
       // Persist the cleaned list into the global store (calendar cache)
       setLogs(
-        props.date,
+        saveDate,
         finalLogs.map((l) => ({
           id: l.id,
           issueKey: l.issueKey,
@@ -861,8 +866,12 @@ function saveChanges() {
         }))
       );
 
-      // Refresh the local modal cache if the component is still mounted / visible later
-      await fetchLogs();
+      markUpdated(saveDate, prevHours, total);
+
+      // Refresh the local modal cache only if the modal is still showing the same date
+      if (props.date === saveDate) {
+        await fetchLogs();
+      }
       addToast(`Worklogs saved for ${formattedDate.value}`, 'success');
     } catch (err) {
       console.error(err);

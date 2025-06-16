@@ -47,7 +47,7 @@ const autoFilling = ref(false)
 const calRef = ref(null)
 
 // Access global work-log store helpers
-const { getLogs, fetchMonth, addHours, setLogs } = useWorklogStore()
+const { getLogs, fetchMonth, addHours, setLogs, markUpdated, getHours } = useWorklogStore()
 const { addToast } = useToastStore()
 
 // Check if Jira credentials are present
@@ -146,7 +146,11 @@ async function autoFillCeremonies () {
     // Update local hours tally for immediate calendar highlight
     Object.entries(hoursByDay).forEach(([iso, hrs]) => {
       const dateObj = new Date(`${iso}T00:00:00`)
+      const prevHours = getHours(dateObj)
       addHours(dateObj, hrs)
+      const newHours = getHours(dateObj)
+      // Trigger recent-update highlight for calendar cell using prev and new hours
+      markUpdated(dateObj, prevHours, newHours)
     })
 
     // Merge newly created logs into central store so WorklogModal shows them immediately
