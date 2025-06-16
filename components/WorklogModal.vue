@@ -192,6 +192,7 @@ import weekOfYear from "dayjs/plugin/weekOfYear";
 import debounce from "lodash.debounce";
 import { useFocus } from "@vueuse/core";
 import { onBeforeRouteLeave } from "vue-router";
+import { useSavingIndicator } from "~/composables/useSavingIndicator";
 
 // Initialise Day.js with timezone support
 dayjs.extend(utc);
@@ -209,7 +210,7 @@ const issueInput = ref("");
 const duration = ref(1);
 const manualError = ref("");
 const unsaved = ref(false);
-const saving = ref(false);
+const { saving } = useSavingIndicator();
 
 // Active issues pagination state
 const activeIssues = ref([]);
