@@ -126,8 +126,8 @@ async function autoFillCeremonies () {
       })
     }
 
-    // Process creations in parallel batches of 10
-    const batchSize = 10
+    // Process creations in parallel batches of 20
+    const batchSize = 20
     for (let i = 0; i < creations.length; i += batchSize) {
       const batch = creations.slice(i, i + batchSize)
       const results = await Promise.all(batch.map(item => createWorklog(item.issueKey, item.hours, item.date)))

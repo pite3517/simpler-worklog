@@ -9,6 +9,7 @@ export interface WorklogItem {
   issueKey: string;
   summary: string;
   timeSpentSeconds: number;
+  issueType?: string;
 }
 
 // Cache of full work-log arrays keyed by YYYY-MM-DD (local)
@@ -75,7 +76,7 @@ export function useWorklogStore() {
     try {
       // 1) Find issues having any work-logs by the user in the selected range
       const jql = `worklogAuthor = currentUser() AND worklogDate >= "${start}" AND worklogDate <= "${end}"`;
-      const body = { jql, fields: ["summary"], maxResults: 5000 };
+      const body = { jql, fields: ["summary", "issuetype"], maxResults: 5000 };
       const search = await jiraFetch<any>("rest/api/3/search/jql", {
         method: "POST",
         body: JSON.stringify(body),
@@ -109,10 +110,19 @@ export function useWorklogStore() {
                 issueKey: issue.key,
                 summary: issue.fields.summary,
                 timeSpentSeconds: w.timeSpentSeconds,
+                issueType: issue.fields.issuetype?.name,
               };
 
-              if (!logsByDate[startedDate]) logsByDate[startedDate] = [];
-              logsByDate[startedDate].push(item);
+              // Initialise container for the date if missing
+              if (!logsByDate[startedDate]) {
+                logsByDate[startedDate] = [item];
+              } else {
+                // Avoid inserting duplicates that may already exist in the cache
+                const exists = logsByDate[startedDate].some((l) => l.id === item.id);
+                if (!exists) {
+                  logsByDate[startedDate].push(item);
+                }
+              }
 
               // Keep hours tally in sync
               const dateObj = new Date(`${startedDate}T00:00:00`);

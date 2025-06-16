@@ -31,14 +31,37 @@
                 :key="log.id"
                 :class="['transition-colors', log.isNew ? '!bg-info/20' : '']"
               >
-                <td>{{ log.issueKey }}</td>
-                <td>{{ log.summary }}</td>
-                <td class="text-right">
+                <td class="!align-middle">
+                  <div class="flex items-center gap-2">
+                    <img v-if="log.issueType" :src="issueTypeIcon(log.issueType)" class="w-4 h-4" >
+                    <a
+                      :href="`https://linemanwongnai.atlassian.net/browse/${log.issueKey}`"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="no-underline hover:underline"
+                    >
+                      {{ log.issueKey }}
+                    </a>
+                  </div>
+                </td>
+                <td class="align-middle">
+                  <a
+                    :href="`https://linemanwongnai.atlassian.net/browse/${log.issueKey}`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="no-underline hover:underline"
+                  >
+                    {{ log.summary }}
+                  </a>
+                </td>
+                <td class="text-right align-middle">
                   {{ ((log.timeSpentSeconds ?? 0) / 3600).toFixed(2) }}
                 </td>
                 <td class="w-14 text-right">
                   <button class="btn btn-xs btn-ghost" @click="onDelete(log)">
-                    🗑️
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" />
+                    </svg>
                   </button>
                 </td>
               </tr>
@@ -82,9 +105,10 @@
           <li
             v-for="iss in activeIssues"
             :key="iss.key"
-            class="px-2 py-1 cursor-pointer hover:bg-base-200 flex gap-2"
+            class="px-2 py-1 cursor-pointer hover:bg-base-200 flex gap-2 items-center"
             @click="onIssueSelect(iss)"
           >
+            <img v-if="iss.issueType" :src="issueTypeIcon(iss.issueType)" class="w-4 h-4" >
             <span class="font-mono font-semibold">{{ iss.key }}</span>
             <span class="truncate">{{ iss.summary }}</span>
           </li>
@@ -131,18 +155,20 @@
           {{ manualError }}
         </p>
         <p
-          class="text-xs opacity-80 mt-1 truncate h-5"
+          class="text-sm mt-2 truncate h-5"
           :style="{ visibility: searchedIssue && !manualError ? 'visible' : 'hidden' }"
         >
-          <a
-            v-if="searchedIssue"
-            :href="`https://linemanwongnai.atlassian.net/browse/${searchedIssue.key}`"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="link"
-          >
-            {{ searchedIssue.summary }}
-          </a>
+          <span v-if="searchedIssue" class="flex items-center gap-1">
+            <img v-if="searchedIssue.issueType" :src="issueTypeIcon(searchedIssue.issueType)" class="w-4 h-4 mr-1" >
+            <a
+              :href="`https://linemanwongnai.atlassian.net/browse/${searchedIssue.key}`"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="no-underline hover:underline"
+            >
+              {{ searchedIssue.summary }}
+            </a>
+          </span>
         </p>
         <ul
           v-if="suggestions.length"
@@ -151,9 +177,10 @@
           <li
             v-for="s in suggestions"
             :key="s.key"
-            class="px-2 py-1 cursor-pointer hover:bg-base-200 flex gap-2"
+            class="px-2 py-1 cursor-pointer hover:bg-base-200 flex gap-2 items-center"
             @click="onSuggestion(s)"
           >
+            <img v-if="s.issueType" :src="issueTypeIcon(s.issueType)" class="w-4 h-4" >
             <span class="font-mono font-semibold">{{ s.key }}</span>
             <span class="truncate">{{ s.summary }}</span>
           </li>
@@ -238,8 +265,9 @@ const suggestionsLoadMoreTrigger = ref(null);
 let suggestionsObserver = null;
 const currentSuggestionTerm = ref('');
 
-// Map of issueKey -> real Jira summary (fetched once on mount)
+// Map of issueKey -> summary and issueType cached for presets
 const presetSummaries = reactive({});
+const presetIssueTypes = reactive({});
 
 // Central work-log cache
 const { getLogs, fetchMonth, setLogs } = useWorklogStore();
@@ -248,6 +276,21 @@ const { addToast } = useToastStore();
 // Autofocus handling for Manual Add input
 const manualInput = ref(null);
 const { focused: manualFocused } = useFocus(manualInput);
+
+const issueSlugMap = {
+  Bug: 'bug',
+  'Production Bug': 'production-bug',
+  Task: 'task',
+  'Sub-task': 'sub-task',
+  Story: 'story',
+  Epic: 'epic',
+};
+
+function issueTypeIcon(name) {
+  if (!name) return '';
+  const slug = issueSlugMap[name] ?? name.toLowerCase().replace(/\s+/g, '-');
+  return `/img/issue-type/${slug}.png`;
+}
 
 function focusManual() {
   // Run after next tick & microtasks to avoid DaisyUI modal stealing focus
@@ -267,8 +310,8 @@ const debouncedLookup = debounce(async (term) => {
     const keyMatch = parseIssueKey(term);
     if (keyMatch && keyMatch === term.toUpperCase()) {
       // Exact key pattern – try direct fetch
-      const data = await jiraFetch(`rest/api/3/issue/${keyMatch}?fields=summary`);
-      searchedIssue.value = { key: data.key, summary: data.fields.summary };
+      const data = await jiraFetch(`rest/api/3/issue/${keyMatch}?fields=summary,issuetype`);
+      searchedIssue.value = { key: data.key, summary: data.fields.summary, issueType: data.fields.issuetype?.name };
       manualError.value = "";
     } else {
       // Generic search for suggestions with pagination (first page)
@@ -276,8 +319,8 @@ const debouncedLookup = debounce(async (term) => {
       suggestionPageStart.value = 0;
       suggestionTotal.value = 0;
       const body = {
-        jql: `summary ~ "${term}" ORDER BY updated DESC`,
-        fields: ["summary"],
+        jql: `summary ~ "${term}" AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
+        fields: ["summary", "issuetype"],
         maxResults: suggestionPageSize,
         startAt: suggestionPageStart.value,
       };
@@ -286,7 +329,7 @@ const debouncedLookup = debounce(async (term) => {
         body: JSON.stringify(body),
       });
       suggestions.value =
-        res.issues?.map((i) => ({ key: i.key, summary: i.fields.summary })) ?? [];
+        res.issues?.map((i) => ({ key: i.key, summary: i.fields.summary, issueType: i.fields.issuetype?.name })) ?? [];
       suggestionTotal.value = res.total ?? suggestions.value.length;
       suggestionPageStart.value += suggestions.value.length;
       // Reset single search result until exact key chosen
@@ -437,8 +480,9 @@ async function prefetchPresetSummaries() {
       .map(async (p) => {
         try {
           if (presetSummaries[p.issueKey]) return;
-          const data = await jiraFetch(`rest/api/3/issue/${p.issueKey}?fields=summary`);
+          const data = await jiraFetch(`rest/api/3/issue/${p.issueKey}?fields=summary,issuetype`);
           presetSummaries[p.issueKey] = data.fields.summary;
+          presetIssueTypes[p.issueKey] = data.fields.issuetype?.name;
         } catch {
           /* ignore fetch errors */
         }
@@ -450,8 +494,8 @@ async function loadActiveIssues(append = false) {
   try {
     if (append) loadingMore.value = true;
     const body = {
-      jql: "assignee = currentUser() AND updated >= -30d ORDER BY updated DESC",
-      fields: ["summary"],
+      jql: `assignee = currentUser() AND updated >= -30d AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
+      fields: ["summary", "issuetype"],
       maxResults: pageSize,
       startAt: pageStart.value,
     };
@@ -460,7 +504,7 @@ async function loadActiveIssues(append = false) {
       body: JSON.stringify(body),
     });
     const newItems =
-      data.issues?.map((i) => ({ key: i.key, summary: i.fields.summary })) ??
+      data.issues?.map((i) => ({ key: i.key, summary: i.fields.summary, issueType: i.fields.issuetype?.name })) ??
       [];
 
     if (append) {
@@ -558,14 +602,20 @@ async function onPreset(preset) {
     summary,
     timeSpentSeconds: parseFloat(hoursToAdd.toFixed(2)) * 3600,
     isNew: true,
+    issueType: presetIssueTypes[preset.issueKey],
   })
   unsaved.value = true;
+
+  // Ensure newly added preset log also gets issueType if not yet cached
+  if (!presetIssueTypes[preset.issueKey]) {
+    fillMissingSummaries();
+  }
 }
 
 function onIssueSelect(issue) {
   manualError.value = '';
   issueInput.value = issue.key;
-  searchedIssue.value = { key: issue.key, summary: issue.summary };
+  searchedIssue.value = { key: issue.key, summary: issue.summary, issueType: issue.issueType };
   skipNextLookup.value = true;
   // Reset duration to 1h as default, user can adjust via chips
   duration.value = 1;
@@ -586,7 +636,7 @@ function onDelete(log) {
 
 function onSuggestion(issue) {
   issueInput.value = issue.key;
-  searchedIssue.value = { key: issue.key, summary: issue.summary };
+  searchedIssue.value = { key: issue.key, summary: issue.summary, issueType: issue.issueType };
   skipNextLookup.value = true;
   suggestions.value = [];
 }
@@ -684,6 +734,7 @@ async function addManual() {
     summary: searchedIssue.value.summary ?? '',
     timeSpentSeconds: parseFloat(hoursToAdd.toFixed(2)) * 3600,
     isNew: true,
+    issueType: searchedIssue.value.issueType,
   })
 
   // Reset input & duration UI
@@ -743,11 +794,14 @@ function saveChanges() {
   loading.value = true; // still useful for other visual cues (e.g. global spinner)
   unsaved.value = false;
 
-  // Fire-and-forget async save operation
+  // Capture a stable reference to the current logs array BEFORE the modal state may reset
+  const logsSnapshot = logs.value;
+
+  // Fire-and-forget async save operation using the snapshot to avoid it being cleared by resetModalState
   ;(async () => {
     try {
-      const createOps = logs.value.filter((l) => l.isNew && !l.deleted);
-      const deleteOps = logs.value.filter((l) => l.deleted && !l.isNew);
+      const createOps = logsSnapshot.filter((l) => l.isNew && !l.deleted);
+      const deleteOps = logsSnapshot.filter((l) => l.deleted && !l.isNew);
 
       // Deterministic insertion order
       createOps.sort((a, b) => a.id.localeCompare(b.id));
@@ -779,23 +833,26 @@ function saveChanges() {
 
       await Promise.all([...createPromises, ...deletePromises]);
 
-      // Persist results into the global store
-      logs.value = logs.value.filter((l) => !l.deleted);
-      logs.value.forEach((l) => {
+      // Remove any entries flagged for deletion from the snapshot
+      const finalLogs = logsSnapshot.filter((l) => !l.deleted);
+      finalLogs.forEach((l) => {
         l.isNew = false;
         delete l.deleted;
       });
 
+      // Persist the cleaned list into the global store (calendar cache)
       setLogs(
         props.date,
-        logs.value.map((l) => ({
+        finalLogs.map((l) => ({
           id: l.id,
           issueKey: l.issueKey,
           summary: l.summary,
           timeSpentSeconds: l.timeSpentSeconds,
+          issueType: l.issueType,
         }))
       );
 
+      // Refresh the local modal cache if the component is still mounted / visible later
       await fetchLogs();
       addToast(`Worklogs saved for ${formattedDate.value}`, 'success');
     } catch (err) {
@@ -881,28 +938,32 @@ function onCommonPreset(preset) {
 }
 
 async function fillMissingSummaries() {
-  // Fetch summaries for logs that currently lack a summary so the modal table shows meaningful information
-  const keysToFetch = [...new Set(logs.value.filter(l => !l.summary || l.summary === '').map(l => l.issueKey))]
+  // Fetch summaries/issue types for logs lacking them so UI has complete info
+  const keysToFetch = [...new Set(logs.value.filter(l => (!l.summary || l.summary === '') || !l.issueType).map(l => l.issueKey))]
   if (keysToFetch.length === 0) return
 
   await Promise.all(
     keysToFetch.map(async (k) => {
       try {
         // Re-use cached preset summaries first to minimise network calls
-        let summary = presetSummaries[k]
-        if (!summary) {
-          const data = await jiraFetch(`rest/api/3/issue/${k}?fields=summary`)
-          summary = data?.fields?.summary ?? ''
+        let cachedSummary = presetSummaries[k]
+        let fetchedSummary = cachedSummary
+        let fetchedType
+
+        if (!cachedSummary || logs.value.some(l => l.issueKey === k && !l.issueType)) {
+          const data = await jiraFetch(`rest/api/3/issue/${k}?fields=summary,issuetype`)
+          fetchedSummary = data?.fields?.summary ?? cachedSummary ?? ''
+          fetchedType = data?.fields?.issuetype?.name
         }
-        if (summary) {
-          logs.value.forEach(l => {
-            if (l.issueKey === k && (!l.summary || l.summary === '')) {
-              l.summary = summary
-            }
-          })
-        }
+
+        logs.value.forEach(l => {
+          if (l.issueKey === k) {
+            if (!l.summary || l.summary === '') l.summary = fetchedSummary
+            if (!l.issueType && fetchedType) l.issueType = fetchedType
+          }
+        })
       } catch {
-        /* ignore fetch errors – leave summary blank if retrieval fails */
+        /* ignore fetch errors – leave attributes blank if retrieval fails */
       }
     })
   )
@@ -914,8 +975,8 @@ async function loadMoreSuggestions() {
   suggestionLoadingMore.value = true;
   try {
     const body = {
-      jql: `summary ~ "${currentSuggestionTerm.value}" ORDER BY updated DESC`,
-      fields: ["summary"],
+      jql: `summary ~ "${currentSuggestionTerm.value}" AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
+      fields: ["summary", "issuetype"],
       maxResults: suggestionPageSize,
       startAt: suggestionPageStart.value,
     };
@@ -924,7 +985,7 @@ async function loadMoreSuggestions() {
       body: JSON.stringify(body),
     });
     const newItems =
-      res.issues?.map((i) => ({ key: i.key, summary: i.fields.summary })) ?? [];
+      res.issues?.map((i) => ({ key: i.key, summary: i.fields.summary, issueType: i.fields.issuetype?.name })) ?? [];
     suggestions.value.push(...newItems);
 
     suggestionPageStart.value += newItems.length;

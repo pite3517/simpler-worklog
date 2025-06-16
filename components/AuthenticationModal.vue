@@ -39,8 +39,43 @@
             @keyup.enter="save"
           >
           <button class="btn btn-square" type="button" @click="showToken = !showToken">
-            <span v-if="showToken">🙈</span>
-            <span v-else>👁️</span>
+            <svg
+              v-if="showToken"
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <!-- Eye-off icon: base eye + strike -->
+              <!-- Diagonal strike -->
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />
+              <!-- Eye (same as unmask icon) -->
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <!-- Eye icon -->
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
+            </svg>
           </button>
         </div>
       </div>
@@ -95,6 +130,8 @@ watch(
       if (!dlg.value.open) dlg.value.showModal()
     }
     else {
+      // Modal closing – reset token visibility state
+      showToken.value = false
       if (dlg.value.open) dlg.value.close()
     }
   },

@@ -25,7 +25,7 @@
       <button
         v-for="day in days"
         :key="day.date.toISOString()"
-        class="relative h-30 w-full p-1 flex items-center justify-center border border-base-300"
+        class="relative h-25 sm:h-30 w-full p-1 flex items-center justify-center border border-base-300"
         :class="cellClass(day)"
         :disabled="day.isWeekend || !hasCreds"
         @click="emit('day-selected', day.date)"
