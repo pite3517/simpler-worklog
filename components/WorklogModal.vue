@@ -191,6 +191,7 @@ import timezone from "dayjs/plugin/timezone";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import debounce from "lodash.debounce";
 import { useFocus } from "@vueuse/core";
+import { onBeforeRouteLeave } from "vue-router";
 
 // Initialise Day.js with timezone support
 dayjs.extend(utc);
@@ -208,6 +209,7 @@ const issueInput = ref("");
 const duration = ref(1);
 const manualError = ref("");
 const unsaved = ref(false);
+const saving = ref(false);
 
 // Active issues pagination state
 const activeIssues = ref([]);
@@ -692,101 +694,130 @@ async function addManual() {
 
 // ------------------- Save / Close handling -----------------------------------
 
-async function saveChanges() {
-  loading.value = true
-  try {
-    // Business rules ---------------------------------------------------------
-    if (isWeekendDay(props.date)) {
-      alert('Cannot log work on weekend')
-      return
-    }
+function handleBeforeUnload(e) {
+  if (!saving.value) return;
+  e.preventDefault();
+  e.returnValue = '';
+}
 
-    const totalHours = currentTotalHours()
-    if (totalHours > 8) {
-      alert('Total hours exceed 8h limit')
-      return
-    }
-    if (totalHours < 8) {
-      if (!confirm('Total hours < 8h. Proceed anyway?')) {
-        return
-      }
-    }
-
-    const createOps = logs.value.filter((l) => l.isNew && !l.deleted)
-    const deleteOps = logs.value.filter((l) => l.deleted && !l.isNew)
-
-    // Sort createOps by initial insertion order (id timestamp) for deterministic offsets
-    createOps.sort((a,b)=>a.id.localeCompare(b.id))
-
-    // All work-logs for the day should share the same start time (09:00).
-    const startedStr = dayjs(props.date)
-      .tz('Asia/Bangkok')
-      .hour(9)
-      .minute(0)
-      .second(0)
-      .millisecond(0)
-      .format('YYYY-MM-DDTHH:mm:ss.SSSZZ')
-
-    // Run creation and deletion operations in parallel to speed up saves
-    const createPromises = createOps.map(async (l) => {
-      const resp = await createWorklog(
-        l.issueKey,
-        l.timeSpentSeconds / 3600,
-        startedStr
-      )
-      // Replace temporary id with the real one and mark as persisted
-      if (resp && resp.id) l.id = resp.id
-      l.isNew = false
-    })
-
-    const deletePromises = deleteOps.map((l) =>
-      jiraFetch(
-        `rest/api/3/issue/${l.issueKey}/worklog/${l.id}?notifyUsers=false`,
-        {
-          method: 'DELETE',
-        }
-      )
-    )
-
-    await Promise.all([...createPromises, ...deletePromises])
-
-    // Prune deleted items and persist the fresh list into the global store
-    logs.value = logs.value.filter((l) => !l.deleted)
-    logs.value.forEach((l) => {
-      // Ensure no lingering flags
-      l.isNew = false
-      delete l.deleted
-    })
-
-    setLogs(
-      props.date,
-      logs.value.map((l) => ({
-        id: l.id,
-        issueKey: l.issueKey,
-        summary: l.summary,
-        timeSpentSeconds: l.timeSpentSeconds,
-      }))
-    )
-
-    await fetchLogs()
-    unsaved.value = false
-    addToast(`Worklogs saved for ${formattedDate.value}`, 'success')
-    // Auto-close modal after successful save
-    attemptClose()
-  } catch (err) {
-    console.error(err)
-  } finally {
-    loading.value = false
+watch(saving, (v) => {
+  if (typeof window === 'undefined') return;
+  if (v) {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  } else {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
   }
+});
+
+// Guard in-app route navigation while the save request is still pending
+onBeforeRouteLeave(() => {
+  if (saving.value) {
+    const ok = window.confirm('Worklog save is still in progress. Leave anyway?');
+    if (!ok) return false; // cancel navigation
+  }
+});
+
+function saveChanges() {
+  if (saving.value) return; // prevent duplicate clicks
+
+  // ---------------- Business rules validation -----------------------------
+  if (isWeekendDay(props.date)) {
+    alert('Cannot log work on weekend');
+    return;
+  }
+
+  const total = currentTotalHours();
+  if (total > 8) {
+    alert('Total hours exceed 8h limit');
+    return;
+  }
+  if (total < 8) {
+    if (!confirm('Total hours < 8h. Proceed anyway?')) {
+      return;
+    }
+  }
+
+  // Mark states BEFORE kicking off async save so UI can close immediately
+  saving.value = true;
+  loading.value = true; // still useful for other visual cues (e.g. global spinner)
+  unsaved.value = false;
+
+  // Fire-and-forget async save operation
+  ;(async () => {
+    try {
+      const createOps = logs.value.filter((l) => l.isNew && !l.deleted);
+      const deleteOps = logs.value.filter((l) => l.deleted && !l.isNew);
+
+      // Deterministic insertion order
+      createOps.sort((a, b) => a.id.localeCompare(b.id));
+
+      const startedStr = dayjs(props.date)
+        .tz('Asia/Bangkok')
+        .hour(9)
+        .minute(0)
+        .second(0)
+        .millisecond(0)
+        .format('YYYY-MM-DDTHH:mm:ss.SSSZZ');
+
+      const createPromises = createOps.map(async (l) => {
+        const resp = await createWorklog(
+          l.issueKey,
+          l.timeSpentSeconds / 3600,
+          startedStr
+        );
+        if (resp && resp.id) l.id = resp.id;
+        l.isNew = false;
+      });
+
+      const deletePromises = deleteOps.map((l) =>
+        jiraFetch(
+          `rest/api/3/issue/${l.issueKey}/worklog/${l.id}?notifyUsers=false`,
+          { method: 'DELETE' }
+        )
+      );
+
+      await Promise.all([...createPromises, ...deletePromises]);
+
+      // Persist results into the global store
+      logs.value = logs.value.filter((l) => !l.deleted);
+      logs.value.forEach((l) => {
+        l.isNew = false;
+        delete l.deleted;
+      });
+
+      setLogs(
+        props.date,
+        logs.value.map((l) => ({
+          id: l.id,
+          issueKey: l.issueKey,
+          summary: l.summary,
+          timeSpentSeconds: l.timeSpentSeconds,
+        }))
+      );
+
+      await fetchLogs();
+      addToast(`Worklogs saved for ${formattedDate.value}`, 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to save worklogs. See console for details.', 'error');
+    } finally {
+      loading.value = false;
+      saving.value = false;
+    }
+  })();
+
+  // Close the dialog right away; navigation guard will protect while saving
+  attemptClose();
 }
 
 function attemptClose() {
-  if (unsaved.value) {
+  // If a save is in progress we allow immediate close without warning
+  if (!saving.value && unsaved.value) {
     if (!confirm('You have unsaved changes. Discard them?')) {
-      return
+      return;
     }
   }
-  emit('close')
+  emit('close');
 }
 
 function isWeekendDay(dateObj) {
