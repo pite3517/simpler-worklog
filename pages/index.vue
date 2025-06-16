@@ -218,5 +218,4 @@ function createWorklog (issueKey, hours, dateObj) {
     body: JSON.stringify(payload),
   })
 }
-// --------------------------------------------------------------------------
 </script> 

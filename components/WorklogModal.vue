@@ -54,7 +54,7 @@
                     {{ log.summary }}
                   </a>
                 </td>
-                <td class="text-right align-middle">
+                <td :class="['text-right', 'align-middle', log.reduced ? 'text-warning' : '']">
                   {{ ((log.timeSpentSeconds ?? 0) / 3600).toFixed(2) }}
                 </td>
                 <td class="w-14 text-right">
@@ -143,7 +143,8 @@
           <div class="flex items-center gap-1">
             <button class="btn btn-xs" @click="bump(-1)">-1h</button>
             <button class="btn btn-xs" @click="bump(-0.5)">-30m</button>
-            <span class="font-mono text-md w-14 text-center text-primary font-semibold"
+            <span
+              :class="['font-mono', 'text-md', 'w-14', 'text-center', 'font-semibold', durationReduced ? 'text-warning' : 'text-primary']"
               >{{ duration.toFixed(2) }}h</span
             >
             <button class="btn btn-xs" @click="bump(0.5)">+30m</button>
@@ -151,7 +152,7 @@
           </div>
           <button class="btn btn-sm btn-primary" @click="addManual">Add</button>
         </div>
-        <p v-if="manualError" class="text-error text-xs mt-1">
+        <p v-if="manualError" class="text-error text-sm mt-2">
           {{ manualError }}
         </p>
         <p
@@ -594,6 +595,7 @@ async function onPreset(preset) {
   manualError.value = '';
 
   const hoursToAdd = Math.min(preset.hours, remain);
+  const isReduced = hoursToAdd < preset.hours;
   const summary = preset.issueKey ? (presetSummaries[preset.issueKey] || preset.label) : preset.label;
 
   logs.value.push({
@@ -603,6 +605,7 @@ async function onPreset(preset) {
     timeSpentSeconds: parseFloat(hoursToAdd.toFixed(2)) * 3600,
     isNew: true,
     issueType: presetIssueTypes[preset.issueKey],
+    reduced: isReduced,
   })
   unsaved.value = true;
 
@@ -619,6 +622,7 @@ function onIssueSelect(issue) {
   skipNextLookup.value = true;
   // Reset duration to 1h as default, user can adjust via chips
   duration.value = 1;
+  adjustDurationToLimit();
   // Clear suggestions to avoid confusion
   suggestions.value = [];
   // Focus could be handled by ref but omitted here for brevity
@@ -638,6 +642,7 @@ function onSuggestion(issue) {
   issueInput.value = issue.key;
   searchedIssue.value = { key: issue.key, summary: issue.summary, issueType: issue.issueType };
   skipNextLookup.value = true;
+  adjustDurationToLimit();
   suggestions.value = [];
 }
 
@@ -663,6 +668,9 @@ function bump(delta) {
   const next = Math.round(nextRaw * 2) / 2; // keep 0.5 steps for buttons
   const capped = Math.min(Math.max(next, 0.5), remaining);
   duration.value = parseFloat(capped.toFixed(2));
+
+  // If bump resulted in capping to remaining hours, mark as reduced
+  durationReduced.value = duration.value < nextRaw;
 }
 
 function remainingHours() {
@@ -740,6 +748,7 @@ async function addManual() {
   // Reset input & duration UI
   issueInput.value = ''
   duration.value = 1
+  durationReduced.value = false
 
   unsaved.value = true;
 }
@@ -929,9 +938,12 @@ function onCommonPreset(preset) {
   issueInput.value = preset.issueKey
   duration.value = preset.defaultHours ?? 1
 
+  adjustDurationToLimit();
+
   // Prefill summary if fetched
   const summary = presetSummaries[preset.issueKey] || preset.label
-  searchedIssue.value = { key: preset.issueKey, summary }
+  const issueType = presetIssueTypes[preset.issueKey]
+  searchedIssue.value = { key: preset.issueKey, summary, issueType }
 
   skipNextLookup.value = true
   suggestions.value = []
@@ -994,6 +1006,19 @@ async function loadMoreSuggestions() {
     console.error(err);
   } finally {
     suggestionLoadingMore.value = false;
+  }
+}
+
+const durationReduced = ref(false);
+
+function adjustDurationToLimit() {
+  const remain = remainingHours();
+  if (duration.value > remain) {
+    // Cap duration to remaining hours and mark as reduced
+    duration.value = parseFloat(remain.toFixed(2));
+    durationReduced.value = true;
+  } else {
+    durationReduced.value = false;
   }
 }
 </script>
