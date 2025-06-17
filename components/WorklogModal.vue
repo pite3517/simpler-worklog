@@ -3,7 +3,10 @@
     <div class="modal-box w-full max-w-3xl">
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-bold text-lg">{{ formattedDate }}</h3>
-        <span class="text-xl font-semibold">{{ totalHours.toFixed(2) }}h</span>
+        <span class="text-xl font-semibold">
+          {{ totalHours.toFixed(2) }}h
+          <span class="text-sm opacity-70"> ({{ remainingHours().toFixed(2) }}h remaining)</span>
+        </span>
       </div>
 
       <!-- Existing logs table -->
@@ -149,6 +152,7 @@
             >
             <button class="btn btn-xs" @click="bump(0.5)">+30m</button>
             <button class="btn btn-xs" @click="bump(1)">+1h</button>
+            <button class="btn btn-xs" @click="bump(5)">+5h</button>
           </div>
           <button class="btn btn-sm btn-primary" @click="addManual">Add</button>
         </div>
