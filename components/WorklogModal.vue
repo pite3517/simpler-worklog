@@ -303,7 +303,7 @@ function focusManual() {
   });
 }
 
-// Debounced lookup function using lodash.debounce (500 ms)
+// Debounced lookup function using lodash.debounce (300 ms)
 const debouncedLookup = debounce(async (term) => {
   searchLoading.value = true;
   suggestions.value = [];
@@ -320,7 +320,7 @@ const debouncedLookup = debounce(async (term) => {
       suggestionPageStart.value = 0;
       suggestionTotal.value = 0;
       const body = {
-        jql: `summary ~ "${term}" AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
+        jql: `summary ~ "${term}*" AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
         fields: ["summary", "issuetype"],
         maxResults: suggestionPageSize,
         startAt: suggestionPageStart.value,
@@ -996,7 +996,7 @@ async function loadMoreSuggestions() {
   suggestionLoadingMore.value = true;
   try {
     const body = {
-      jql: `summary ~ "${currentSuggestionTerm.value}" AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
+      jql: `summary ~ "${currentSuggestionTerm.value}*" AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
       fields: ["summary", "issuetype"],
       maxResults: suggestionPageSize,
       startAt: suggestionPageStart.value,
