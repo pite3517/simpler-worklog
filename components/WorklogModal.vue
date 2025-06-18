@@ -88,7 +88,7 @@
         </div>
 
         <!-- Common Presets -->
-        <h4 class="font-semibold text-sm mt-4">Common</h4>
+        <h4 class="font-semibold text-sm mt-4">Commons</h4>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="c in commonPresets"
@@ -115,7 +115,13 @@
             <span class="font-mono font-semibold">{{ iss.key }}</span>
             <span class="truncate">{{ iss.summary }}</span>
           </li>
-
+          <!-- No active issues fallback -->
+          <li
+            v-if="activeIssues.length === 0 && pageStart >= issuesTotal && !loadingMore"
+            class="p-2 text-center text-sm opacity-60"
+          >
+            No active issues found.
+          </li>
           <!-- Sentinel row for IntersectionObserver. Shows spinner while loading -->
           <li
             v-if="pageStart < issuesTotal"
@@ -131,7 +137,7 @@
       </div>
 
       <!-- Manual Add -->
-      <div class="mt-6">
+      <div class="mt-4">
         <h4 class="font-semibold text-sm mb-2">Manual Add</h4>
         <div class="flex items-center gap-2 flex-wrap">
           <input
