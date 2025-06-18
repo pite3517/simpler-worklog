@@ -40,12 +40,27 @@
         >
           {{ day.date.getDate() }}
         </span>
-        <span
+        <!-- Hours + remaining (0 < hours < 8) -->
+        <div
           v-if="getHours(day.date) > 0 && getHours(day.date) < 8"
+          class="m-auto flex flex-col items-center pointer-events-none space-y-0.5"
+        >
+          <span class="text-sm font-semibold">
+            {{ getHours(day.date).toFixed(2) }}h
+          </span>
+          <span class="text-[10px] leading-none opacity-80">
+            ({{ (8 - getHours(day.date)).toFixed(2) }}h remaining)
+          </span>
+        </div>
+
+        <!-- Done label (hours >= 8) -->
+        <span
+          v-else-if="getHours(day.date) >= 8"
           class="m-auto text-sm font-semibold pointer-events-none"
         >
-          {{ getHours(day.date).toFixed(2) }}
+          Done
         </span>
+
         <!-- Sprint bar overlay (only on weekdays within a 2-week sprint window) -->
         <div
           v-if="getSprint(day.date)"
