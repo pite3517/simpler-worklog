@@ -476,11 +476,13 @@ const commonPresets = [
   { label: 'Holiday', issueKey: 'ADM-1', defaultHours: 8 },
   { label: 'Annual Leave', issueKey: 'ADM-2', defaultHours: 8 },
   { label: 'Sick Leave', issueKey: 'ADM-3', defaultHours: 8 },
+  { label: 'Personal Leave', issueKey: 'ADM-4', defaultHours: 8 },
   { label: 'General Admin', issueKey: 'ADM-6', defaultHours: 1 },
   { label: 'Training', issueKey: 'ADM-7', defaultHours: 8 },
-  { label: 'Recruitment / Interview / Public Speaker', issueKey: 'ADM-9', defaultHours: 1 },
+  { label: 'Recruitment / Interview / Public Speaker', issueKey: 'ADM-9', defaultHours: 1.5 },
   { label: 'Release Support / On Call', issueKey: 'ADM-10', defaultHours: 1 },
   { label: 'General Meetings', issueKey: 'ADM-13', defaultHours: 1 },
+  { label: 'Knowledge Sharing', issueKey: 'ADM-20', defaultHours: 1 },
 ];
 
 async function prefetchPresetSummaries() {
