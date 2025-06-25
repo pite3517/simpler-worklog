@@ -4,8 +4,8 @@
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-bold text-lg">{{ formattedDate }}</h3>
         <span class="text-xl font-semibold">
-          {{ totalHours.toFixed(2) }}h
-          <span class="text-sm opacity-70"> ({{ remainingHours().toFixed(2) }}h remaining)</span>
+          {{ formatHours(totalHours) }}
+          <span class="text-sm opacity-70"> ({{ formatHours(remainingHours()) }} remaining)</span>
         </span>
       </div>
 
@@ -58,7 +58,7 @@
                   </a>
                 </td>
                 <td :class="['text-right', 'align-middle', log.reduced ? 'text-warning' : '']">
-                  {{ ((log.timeSpentSeconds ?? 0) / 3600).toFixed(2) }}
+                  {{ formatHours((log.timeSpentSeconds ?? 0) / 3600) }}
                 </td>
                 <td class="w-14 text-right">
                   <button class="btn btn-xs btn-ghost" @click="onDelete(log)">
@@ -154,7 +154,7 @@
             <button class="btn btn-xs" @click="bump(-0.5)">-30m</button>
             <span
               :class="['font-mono', 'text-md', 'w-14', 'text-center', 'font-semibold', durationReduced ? 'text-warning' : 'text-primary']"
-              >{{ duration.toFixed(2) }}h</span
+              >{{ formatHours(duration) }}</span
             >
             <button class="btn btn-xs" @click="bump(0.5)">+30m</button>
             <button class="btn btn-xs" @click="bump(1)">+1h</button>
@@ -1041,5 +1041,13 @@ function adjustDurationToLimit() {
   } else {
     durationReduced.value = false;
   }
+}
+
+// Utility: convert decimal hours to "H:MMh" string (e.g., 1.5 → "1:30h")
+function formatHours(val) {
+  const totalMinutes = Math.round(val * 60)
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  return `${h}:${m.toString().padStart(2, '0')}h`
 }
 </script>

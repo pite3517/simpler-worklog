@@ -46,10 +46,10 @@
           class="m-auto flex flex-col items-center pointer-events-none space-y-0.5"
         >
           <span class="text-sm font-semibold">
-            {{ getHours(day.date).toFixed(2) }}h
+            {{ formatHours(getHours(day.date)) }}
           </span>
           <span class="text-[10px] leading-none opacity-80">
-            ({{ (8 - getHours(day.date)).toFixed(2) }}h remaining)
+            ({{ formatHours(8 - getHours(day.date)) }} remaining)
           </span>
         </div>
 
@@ -253,6 +253,14 @@ function cellClass(day) {
 
 function getAnchor() {
   return anchor.value
+}
+
+// Utility: convert decimal hours to "H:MMh" string (e.g., 1.5 → "1:30h")
+function formatHours(val) {
+  const totalMinutes = Math.round(val * 60)
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  return `${h}:${m.toString().padStart(2, '0')}h`
 }
 
 defineExpose({ getAnchor })
