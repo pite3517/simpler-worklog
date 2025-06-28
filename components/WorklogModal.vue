@@ -5,7 +5,9 @@
         <h3 class="font-bold text-lg">{{ formattedDate }}</h3>
         <span class="text-xl font-semibold">
           {{ formatHours(totalHours) }}
-          <span class="text-sm opacity-70"> ({{ formatHours(remainingHours()) }} remaining)</span>
+          <span class="text-sm opacity-70">
+            ({{ formatHours(remainingHours()) }} remaining)</span
+          >
         </span>
       </div>
 
@@ -36,7 +38,11 @@
               >
                 <td class="!align-middle">
                   <div class="flex items-center gap-2">
-                    <img v-if="log.issueType" :src="issueTypeIcon(log.issueType)" class="w-4 h-4" >
+                    <img
+                      v-if="log.issueType"
+                      :src="issueTypeIcon(log.issueType)"
+                      class="w-4 h-4"
+                    />
                     <a
                       :href="`https://linemanwongnai.atlassian.net/browse/${log.issueKey}`"
                       target="_blank"
@@ -57,13 +63,30 @@
                     {{ log.summary }}
                   </a>
                 </td>
-                <td :class="['text-right', 'align-middle', log.reduced ? 'text-warning' : '']">
+                <td
+                  :class="[
+                    'text-right',
+                    'align-middle',
+                    log.reduced ? 'text-warning' : '',
+                  ]"
+                >
                   {{ formatHours((log.timeSpentSeconds ?? 0) / 3600) }}
                 </td>
                 <td class="w-14 text-right">
                   <button class="btn btn-xs btn-ghost" @click="onDelete(log)">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-4 h-4 text-error"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6"
+                      />
                     </svg>
                   </button>
                 </td>
@@ -111,13 +134,21 @@
             class="px-2 py-1 cursor-pointer hover:bg-base-200 flex gap-2 items-center"
             @click="onIssueSelect(iss)"
           >
-            <img v-if="iss.issueType" :src="issueTypeIcon(iss.issueType)" class="w-4 h-4" >
+            <img
+              v-if="iss.issueType"
+              :src="issueTypeIcon(iss.issueType)"
+              class="w-4 h-4"
+            />
             <span class="font-mono font-semibold">{{ iss.key }}</span>
             <span class="truncate">{{ iss.summary }}</span>
           </li>
           <!-- No active issues fallback -->
           <li
-            v-if="activeIssues.length === 0 && pageStart >= issuesTotal && !loadingMore"
+            v-if="
+              activeIssues.length === 0 &&
+              pageStart >= issuesTotal &&
+              !loadingMore
+            "
             class="p-2 text-center text-sm opacity-60"
           >
             No active issues found.
@@ -148,12 +179,19 @@
             class="input input-sm input-bordered flex-1 min-w-40"
             @keyup.enter.prevent="addManual"
             @paste="onPasteIssue"
-          >
+          />
           <div class="flex items-center gap-1">
             <button class="btn btn-xs" @click="bump(-1)">-1h</button>
             <button class="btn btn-xs" @click="bump(-0.5)">-30m</button>
             <span
-              :class="['font-mono', 'text-md', 'w-14', 'text-center', 'font-semibold', durationReduced ? 'text-warning' : 'text-primary']"
+              :class="[
+                'font-mono',
+                'text-md',
+                'w-14',
+                'text-center',
+                'font-semibold',
+                durationReduced ? 'text-warning' : 'text-primary',
+              ]"
               >{{ formatHours(duration) }}</span
             >
             <button class="btn btn-xs" @click="bump(0.5)">+30m</button>
@@ -167,10 +205,16 @@
         </p>
         <p
           class="text-sm mt-2 truncate h-5"
-          :style="{ visibility: searchedIssue && !manualError ? 'visible' : 'hidden' }"
+          :style="{
+            visibility: searchedIssue && !manualError ? 'visible' : 'hidden',
+          }"
         >
           <span v-if="searchedIssue" class="flex items-center gap-1">
-            <img v-if="searchedIssue.issueType" :src="issueTypeIcon(searchedIssue.issueType)" class="w-4 h-4 mr-1" >
+            <img
+              v-if="searchedIssue.issueType"
+              :src="issueTypeIcon(searchedIssue.issueType)"
+              class="w-4 h-4 mr-1"
+            />
             <a
               :href="`https://linemanwongnai.atlassian.net/browse/${searchedIssue.key}`"
               target="_blank"
@@ -191,7 +235,11 @@
             class="px-2 py-1 cursor-pointer hover:bg-base-200 flex gap-2 items-center"
             @click="onSuggestion(s)"
           >
-            <img v-if="s.issueType" :src="issueTypeIcon(s.issueType)" class="w-4 h-4" >
+            <img
+              v-if="s.issueType"
+              :src="issueTypeIcon(s.issueType)"
+              class="w-4 h-4"
+            />
             <span class="font-mono font-semibold">{{ s.key }}</span>
             <span class="truncate">{{ s.summary }}</span>
           </li>
@@ -210,7 +258,13 @@
       </div>
 
       <div class="modal-action flex justify-end gap-2">
-        <button class="btn btn-primary" :disabled="!unsaved" @click="saveChanges">Save</button>
+        <button
+          class="btn btn-primary"
+          :disabled="!unsaved"
+          @click="saveChanges"
+        >
+          Save
+        </button>
         <button class="btn" @click="attemptClose">Close</button>
       </div>
     </div>
@@ -219,7 +273,16 @@
 
 <script setup lang="ts">
 // @ts-nocheck
-import { ref, watch, onMounted, computed, toRefs, onBeforeUnmount, reactive, nextTick } from "vue";
+import {
+  ref,
+  watch,
+  onMounted,
+  computed,
+  toRefs,
+  onBeforeUnmount,
+  reactive,
+  nextTick,
+} from "vue";
 import { jiraFetch } from "~/composables/useJiraApi";
 import { useWorklogStore } from "~/composables/useWorklogStore";
 import { useToastStore } from "~/composables/useToastStore";
@@ -274,14 +337,15 @@ const suggestionTotal = ref(0);
 const suggestionLoadingMore = ref(false);
 const suggestionsLoadMoreTrigger = ref(null);
 let suggestionsObserver = null;
-const currentSuggestionTerm = ref('');
+const currentSuggestionTerm = ref("");
 
 // Map of issueKey -> summary and issueType cached for presets
 const presetSummaries = reactive({});
 const presetIssueTypes = reactive({});
 
 // Central work-log cache
-const { getLogs, fetchMonth, setLogs, markUpdated, getHours } = useWorklogStore();
+const { getLogs, fetchMonth, setLogs, markUpdated, getHours } =
+  useWorklogStore();
 const { addToast } = useToastStore();
 
 // Autofocus handling for Manual Add input
@@ -289,17 +353,17 @@ const manualInput = ref(null);
 const { focused: manualFocused } = useFocus(manualInput);
 
 const issueSlugMap = {
-  Bug: 'bug',
-  'Production Bug': 'production-bug',
-  Task: 'task',
-  'Sub-task': 'sub-task',
-  Story: 'story',
-  Epic: 'epic',
+  Bug: "bug",
+  "Production Bug": "production-bug",
+  Task: "task",
+  "Sub-task": "sub-task",
+  Story: "story",
+  Epic: "epic",
 };
 
 function issueTypeIcon(name) {
-  if (!name) return '';
-  const slug = issueSlugMap[name] ?? name.toLowerCase().replace(/\s+/g, '-');
+  if (!name) return "";
+  const slug = issueSlugMap[name] ?? name.toLowerCase().replace(/\s+/g, "-");
   return `/img/issue-type/${slug}.png`;
 }
 
@@ -321,8 +385,14 @@ const debouncedLookup = debounce(async (term) => {
     const keyMatch = parseIssueKey(term);
     if (keyMatch && keyMatch === term.toUpperCase()) {
       // Exact key pattern – try direct fetch
-      const data = await jiraFetch(`rest/api/3/issue/${keyMatch}?fields=summary,issuetype`);
-      searchedIssue.value = { key: data.key, summary: data.fields.summary, issueType: data.fields.issuetype?.name };
+      const data = await jiraFetch(
+        `rest/api/3/issue/${keyMatch}?fields=summary,issuetype`
+      );
+      searchedIssue.value = {
+        key: data.key,
+        summary: data.fields.summary,
+        issueType: data.fields.issuetype?.name,
+      };
       manualError.value = "";
     } else {
       // Generic search for suggestions with pagination (first page)
@@ -340,7 +410,11 @@ const debouncedLookup = debounce(async (term) => {
         body: JSON.stringify(body),
       });
       suggestions.value =
-        res.issues?.map((i) => ({ key: i.key, summary: i.fields.summary, issueType: i.fields.issuetype?.name })) ?? [];
+        res.issues?.map((i) => ({
+          key: i.key,
+          summary: i.fields.summary,
+          issueType: i.fields.issuetype?.name,
+        })) ?? [];
       suggestionTotal.value = res.total ?? suggestions.value.length;
       suggestionPageStart.value += suggestions.value.length;
       // Reset single search result until exact key chosen
@@ -363,7 +437,7 @@ const formattedDate = computed(() => {
   return `${d.format("ddd, DD MMM")} (${weekLabel})`;
 });
 
-const displayedLogs = computed(() => logs.value.filter(l => !l.deleted));
+const displayedLogs = computed(() => logs.value.filter((l) => !l.deleted));
 
 const totalHours = computed(() => currentTotalHours());
 
@@ -462,27 +536,30 @@ async function fetchLogs() {
 
 // Static preset definitions
 const presets = [
-  { label: "Daily Stand-up",  hours: 0.25, issueKey: "ADM-17" },
-  { label: "Health Check",    hours: 0.5,  issueKey: "ADM-18" },
-  { label: "Grooming",         hours: 1, issueKey: "ADM-19" },
+  { label: "Daily Stand-up", hours: 0.25, issueKey: "ADM-17" },
+  { label: "Health Check", hours: 0.5, issueKey: "ADM-18" },
+  { label: "Grooming", hours: 1, issueKey: "ADM-19" },
   { label: "Knowledge Sharing", hours: 1, issueKey: "ADM-20" },
-  { label: "Planning",         hours: 1, issueKey: "ADM-16" },
-  { label: "Retrospective",    hours: 1, issueKey: "ADM-18" },
-
+  { label: "Planning", hours: 1, issueKey: "ADM-16" },
+  { label: "Retrospective", hours: 1, issueKey: "ADM-18" },
 ];
 
 // Common presets that pre-fill manual section (no immediate add)
 const commonPresets = [
-  { label: 'Holiday', issueKey: 'ADM-1', defaultHours: 8 },
-  { label: 'Annual Leave', issueKey: 'ADM-2', defaultHours: 8 },
-  { label: 'Sick Leave', issueKey: 'ADM-3', defaultHours: 8 },
-  { label: 'Personal Leave', issueKey: 'ADM-4', defaultHours: 8 },
-  { label: 'General Admin', issueKey: 'ADM-6', defaultHours: 1 },
-  { label: 'Training', issueKey: 'ADM-7', defaultHours: 8 },
-  { label: 'Recruitment / Interview / Public Speaker', issueKey: 'ADM-9', defaultHours: 1.5 },
-  { label: 'Release Support / On Call', issueKey: 'ADM-10', defaultHours: 1 },
-  { label: 'General Meetings', issueKey: 'ADM-13', defaultHours: 1 },
-  { label: 'Knowledge Sharing', issueKey: 'ADM-20', defaultHours: 1 },
+  { label: "Holiday", issueKey: "ADM-1", defaultHours: 8 },
+  { label: "Annual Leave", issueKey: "ADM-2", defaultHours: 8 },
+  { label: "Sick Leave", issueKey: "ADM-3", defaultHours: 8 },
+  { label: "Personal Leave", issueKey: "ADM-4", defaultHours: 8 },
+  { label: "General Admin", issueKey: "ADM-6", defaultHours: 1 },
+  { label: "Training", issueKey: "ADM-7", defaultHours: 8 },
+  {
+    label: "Recruitment / Interview / Public Speaker",
+    issueKey: "ADM-9",
+    defaultHours: 1.5,
+  },
+  { label: "Release Support / On Call", issueKey: "ADM-10", defaultHours: 1 },
+  { label: "General Meetings", issueKey: "ADM-13", defaultHours: 1 },
+  { label: "Knowledge Sharing", issueKey: "ADM-20", defaultHours: 1 },
 ];
 
 async function prefetchPresetSummaries() {
@@ -493,7 +570,9 @@ async function prefetchPresetSummaries() {
       .map(async (p) => {
         try {
           if (presetSummaries[p.issueKey]) return;
-          const data = await jiraFetch(`rest/api/3/issue/${p.issueKey}?fields=summary,issuetype`);
+          const data = await jiraFetch(
+            `rest/api/3/issue/${p.issueKey}?fields=summary,issuetype`
+          );
           presetSummaries[p.issueKey] = data.fields.summary;
           presetIssueTypes[p.issueKey] = data.fields.issuetype?.name;
         } catch {
@@ -517,8 +596,11 @@ async function loadActiveIssues(append = false) {
       body: JSON.stringify(body),
     });
     const newItems =
-      data.issues?.map((i) => ({ key: i.key, summary: i.fields.summary, issueType: i.fields.issuetype?.name })) ??
-      [];
+      data.issues?.map((i) => ({
+        key: i.key,
+        summary: i.fields.summary,
+        issueType: i.fields.issuetype?.name,
+      })) ?? [];
 
     if (append) {
       activeIssues.value.push(...newItems);
@@ -557,68 +639,70 @@ watch(
 
 function createWorklog(issueKey, hours, startedIso) {
   const started = dayjs(props.date)
-    .tz('Asia/Bangkok')
+    .tz("Asia/Bangkok")
     .hour(9)
     .minute(0)
     .second(0)
     .millisecond(0)
-    .format('YYYY-MM-DD') // base date part
+    .format("YYYY-MM-DD"); // base date part
 
-  const startedStr = startedIso ?? dayjs(started)
-    .tz('Asia/Bangkok')
-    .format('YYYY-MM-DDTHH:mm:ss.SSSZZ')
+  const startedStr =
+    startedIso ??
+    dayjs(started).tz("Asia/Bangkok").format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
 
   const payload = {
     started: startedStr,
     timeSpentSeconds: Math.round(hours * 3600),
     comment: {
-      type: 'doc',
+      type: "doc",
       version: 1,
-      content: [{ type: 'paragraph', content: [] }],
+      content: [{ type: "paragraph", content: [] }],
     },
-  }
+  };
 
   return jiraFetch(`rest/api/3/issue/${issueKey}/worklog`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(payload),
-  })
+  });
 }
 
 async function onPreset(preset) {
   if (!preset.issueKey) {
     // Need issue key – prompt user via manual section
-    issueInput.value = ''
-    duration.value = preset.hours
-    manualError.value = 'Select an issue key for "' + preset.label + '"'
-    return
+    issueInput.value = "";
+    duration.value = preset.hours;
+    manualError.value = 'Select an issue key for "' + preset.label + '"';
+    return;
   }
 
   if (isWeekendDay(props.date)) {
-    manualError.value = 'Cannot log work on weekend'
-    return
+    manualError.value = "Cannot log work on weekend";
+    return;
   }
 
   const remain = remainingHours();
   if (remain <= 0) {
-    manualError.value = 'Reached 8h limit';
+    manualError.value = "Reached 8h limit";
     return;
   }
 
-  manualError.value = '';
+  manualError.value = "";
 
   const hoursToAdd = Math.min(preset.hours, remain);
   const isReduced = hoursToAdd < preset.hours;
-  const summary = preset.issueKey ? (presetSummaries[preset.issueKey] || preset.label) : preset.label;
+  const summary = preset.issueKey
+    ? presetSummaries[preset.issueKey] || preset.label
+    : preset.label;
 
   logs.value.push({
-    id: 'tmp-' + Date.now(),
+    id: "tmp-" + Date.now(),
     issueKey: preset.issueKey,
     summary,
     timeSpentSeconds: parseFloat(hoursToAdd.toFixed(2)) * 3600,
     isNew: true,
     issueType: presetIssueTypes[preset.issueKey],
     reduced: isReduced,
-  })
+  });
   unsaved.value = true;
 
   // Ensure newly added preset log also gets issueType if not yet cached
@@ -628,9 +712,13 @@ async function onPreset(preset) {
 }
 
 function onIssueSelect(issue) {
-  manualError.value = '';
+  manualError.value = "";
   issueInput.value = issue.key;
-  searchedIssue.value = { key: issue.key, summary: issue.summary, issueType: issue.issueType };
+  searchedIssue.value = {
+    key: issue.key,
+    summary: issue.summary,
+    issueType: issue.issueType,
+  };
   skipNextLookup.value = true;
   // Reset duration to 1h as default, user can adjust via chips
   duration.value = 1;
@@ -643,23 +731,27 @@ function onIssueSelect(issue) {
 function onDelete(log) {
   // Mark for deletion or remove if it is newly added in this session
   if (log.isNew) {
-    logs.value = logs.value.filter((l) => l !== log)
+    logs.value = logs.value.filter((l) => l !== log);
   } else {
-    log.deleted = !log.deleted
+    log.deleted = !log.deleted;
   }
-  unsaved.value = logs.value.some(l => l.isNew || l.deleted);
+  unsaved.value = logs.value.some((l) => l.isNew || l.deleted);
 }
 
 function onSuggestion(issue) {
   issueInput.value = issue.key;
-  searchedIssue.value = { key: issue.key, summary: issue.summary, issueType: issue.issueType };
+  searchedIssue.value = {
+    key: issue.key,
+    summary: issue.summary,
+    issueType: issue.issueType,
+  };
   skipNextLookup.value = true;
   adjustDurationToLimit();
   suggestions.value = [];
 }
 
 function onPasteIssue(e) {
-  const text = e.clipboardData?.getData('text')?.trim() ?? '';
+  const text = e.clipboardData?.getData("text")?.trim() ?? "";
   const key = parseIssueKey(text);
   if (key) {
     e.preventDefault();
@@ -691,9 +783,9 @@ function remainingHours() {
 
 function parseIssueKey(input) {
   // Accept plain key (ABC-123) or any Jira URL containing the key
-  const KEY_RE = /([A-Z][A-Z0-9]+-\d+)/
-  const m = input.toUpperCase().match(KEY_RE)
-  return m ? m[1] : null
+  const KEY_RE = /([A-Z][A-Z0-9]+-\d+)/;
+  const m = input.toUpperCase().match(KEY_RE);
+  return m ? m[1] : null;
 }
 
 // Lookup whenever the manual issue input changes (debounced)
@@ -723,44 +815,44 @@ onBeforeUnmount(() => {
 });
 
 async function addManual() {
-  const key = parseIssueKey(issueInput.value.trim())
+  const key = parseIssueKey(issueInput.value.trim());
   if (!key) {
-    manualError.value = 'Enter a valid Jira issue key (e.g. LM-xxxxx) or URL'
-    return
+    manualError.value = "Enter a valid Jira issue key (e.g. LM-xxxxx) or URL";
+    return;
   }
 
   // Ensure the searchedIssue matches and exists
   if (!searchedIssue.value || searchedIssue.value.key !== key) {
-    manualError.value = 'Issue not found'
-    return
+    manualError.value = "Issue not found";
+    return;
   }
 
   if (isWeekendDay(props.date)) {
-    manualError.value = 'Cannot log work on weekend'
-    return
+    manualError.value = "Cannot log work on weekend";
+    return;
   }
 
   let hoursToAdd = duration.value;
   const remain = remainingHours();
   if (hoursToAdd > remain) hoursToAdd = remain;
   if (hoursToAdd <= 0) {
-    manualError.value = 'Reached 8h limit';
+    manualError.value = "Reached 8h limit";
     return;
   }
 
   logs.value.push({
-    id: 'tmp-' + Date.now(),
+    id: "tmp-" + Date.now(),
     issueKey: key,
-    summary: searchedIssue.value.summary ?? '',
+    summary: searchedIssue.value.summary ?? "",
     timeSpentSeconds: parseFloat(hoursToAdd.toFixed(2)) * 3600,
     isNew: true,
     issueType: searchedIssue.value.issueType,
-  })
+  });
 
   // Reset input & duration UI
-  issueInput.value = ''
-  duration.value = 1
-  durationReduced.value = false
+  issueInput.value = "";
+  duration.value = 1;
+  durationReduced.value = false;
 
   unsaved.value = true;
 }
@@ -770,22 +862,24 @@ async function addManual() {
 function handleBeforeUnload(e) {
   if (!saving.value) return;
   e.preventDefault();
-  e.returnValue = '';
+  e.returnValue = "";
 }
 
 watch(saving, (v) => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   if (v) {
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
   } else {
-    window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.removeEventListener("beforeunload", handleBeforeUnload);
   }
 });
 
 // Guard in-app route navigation while the save request is still pending
 onBeforeRouteLeave(() => {
   if (saving.value) {
-    const ok = window.confirm('Worklog save is still in progress. Leave anyway?');
+    const ok = window.confirm(
+      "Worklog save is still in progress. Leave anyway?"
+    );
     if (!ok) return false; // cancel navigation
   }
 });
@@ -795,17 +889,17 @@ function saveChanges() {
 
   // ---------------- Business rules validation -----------------------------
   if (isWeekendDay(props.date)) {
-    alert('Cannot log work on weekend');
+    alert("Cannot log work on weekend");
     return;
   }
 
   const total = currentTotalHours();
   if (total > 8) {
-    alert('Total hours exceed 8h limit');
+    alert("Total hours exceed 8h limit");
     return;
   }
   if (total < 8) {
-    if (!confirm('Total hours < 8h. Proceed anyway?')) {
+    if (!confirm("Total hours < 8h. Proceed anyway?")) {
       return;
     }
   }
@@ -821,7 +915,7 @@ function saveChanges() {
   const saveDate = props.date;
 
   // Fire-and-forget async save operation using the snapshot to avoid it being cleared by resetModalState
-  ;(async () => {
+  (async () => {
     try {
       const createOps = logsSnapshot.filter((l) => l.isNew && !l.deleted);
       const deleteOps = logsSnapshot.filter((l) => l.deleted && !l.isNew);
@@ -830,12 +924,12 @@ function saveChanges() {
       createOps.sort((a, b) => a.id.localeCompare(b.id));
 
       const startedStr = dayjs(saveDate)
-        .tz('Asia/Bangkok')
+        .tz("Asia/Bangkok")
         .hour(9)
         .minute(0)
         .second(0)
         .millisecond(0)
-        .format('YYYY-MM-DDTHH:mm:ss.SSSZZ');
+        .format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
 
       const createPromises = createOps.map(async (l) => {
         const resp = await createWorklog(
@@ -850,7 +944,7 @@ function saveChanges() {
       const deletePromises = deleteOps.map((l) =>
         jiraFetch(
           `rest/api/3/issue/${l.issueKey}/worklog/${l.id}?notifyUsers=false`,
-          { method: 'DELETE' }
+          { method: "DELETE" }
         )
       );
 
@@ -884,10 +978,10 @@ function saveChanges() {
       if (props.date === saveDate) {
         await fetchLogs();
       }
-      addToast(`Worklogs saved for ${formattedDate.value}`, 'success');
+      addToast(`Worklogs saved for ${formattedDate.value}`, "success");
     } catch (err) {
       console.error(err);
-      addToast('Failed to save worklogs. See console for details.', 'error');
+      addToast("Failed to save worklogs. See console for details.", "error");
     } finally {
       loading.value = false;
       saving.value = false;
@@ -901,26 +995,29 @@ function saveChanges() {
 function attemptClose() {
   // If a save is in progress we allow immediate close without warning
   if (!saving.value && unsaved.value) {
-    if (!confirm('You have unsaved changes. Discard them?')) {
+    if (!confirm("You have unsaved changes. Discard them?")) {
       return;
     }
   }
-  emit('close');
+  emit("close");
 }
 
 function isWeekendDay(dateObj) {
-  const d = dayjs(dateObj).day()
-  return d === 0 || d === 6
+  const d = dayjs(dateObj).day();
+  return d === 0 || d === 6;
 }
 
 function currentTotalHours() {
-  return displayedLogs.value.reduce((s, l) => s + (l.timeSpentSeconds ?? 0) / 3600, 0)
+  return displayedLogs.value.reduce(
+    (s, l) => s + (l.timeSpentSeconds ?? 0) / 3600,
+    0
+  );
 }
 
 function resetModalState() {
-  issueInput.value = '';
+  issueInput.value = "";
   duration.value = 1;
-  manualError.value = '';
+  manualError.value = "";
   searchedIssue.value = null;
   suggestions.value = [];
   skipNextLookup.value = false;
@@ -945,7 +1042,7 @@ function resetModalState() {
   suggestionPageStart.value = 0;
   suggestionTotal.value = 0;
   suggestionLoadingMore.value = false;
-  currentSuggestionTerm.value = '';
+  currentSuggestionTerm.value = "";
   if (suggestionsObserver) {
     suggestionsObserver.disconnect();
     suggestionsObserver = null;
@@ -955,51 +1052,62 @@ function resetModalState() {
 
 // When user clicks common preset, fill manual fields but do not add log yet
 function onCommonPreset(preset) {
-  manualError.value = ''
-  issueInput.value = preset.issueKey
-  duration.value = preset.defaultHours ?? 1
+  manualError.value = "";
+  issueInput.value = preset.issueKey;
+  duration.value = preset.defaultHours ?? 1;
 
   adjustDurationToLimit();
 
   // Prefill summary if fetched
-  const summary = presetSummaries[preset.issueKey] || preset.label
-  const issueType = presetIssueTypes[preset.issueKey]
-  searchedIssue.value = { key: preset.issueKey, summary, issueType }
+  const summary = presetSummaries[preset.issueKey] || preset.label;
+  const issueType = presetIssueTypes[preset.issueKey];
+  searchedIssue.value = { key: preset.issueKey, summary, issueType };
 
-  skipNextLookup.value = true
-  suggestions.value = []
+  skipNextLookup.value = true;
+  suggestions.value = [];
 }
 
 async function fillMissingSummaries() {
   // Fetch summaries/issue types for logs lacking them so UI has complete info
-  const keysToFetch = [...new Set(logs.value.filter(l => (!l.summary || l.summary === '') || !l.issueType).map(l => l.issueKey))]
-  if (keysToFetch.length === 0) return
+  const keysToFetch = [
+    ...new Set(
+      logs.value
+        .filter((l) => !l.summary || l.summary === "" || !l.issueType)
+        .map((l) => l.issueKey)
+    ),
+  ];
+  if (keysToFetch.length === 0) return;
 
   await Promise.all(
     keysToFetch.map(async (k) => {
       try {
         // Re-use cached preset summaries first to minimise network calls
-        let cachedSummary = presetSummaries[k]
-        let fetchedSummary = cachedSummary
-        let fetchedType
+        let cachedSummary = presetSummaries[k];
+        let fetchedSummary = cachedSummary;
+        let fetchedType;
 
-        if (!cachedSummary || logs.value.some(l => l.issueKey === k && !l.issueType)) {
-          const data = await jiraFetch(`rest/api/3/issue/${k}?fields=summary,issuetype`)
-          fetchedSummary = data?.fields?.summary ?? cachedSummary ?? ''
-          fetchedType = data?.fields?.issuetype?.name
+        if (
+          !cachedSummary ||
+          logs.value.some((l) => l.issueKey === k && !l.issueType)
+        ) {
+          const data = await jiraFetch(
+            `rest/api/3/issue/${k}?fields=summary,issuetype`
+          );
+          fetchedSummary = data?.fields?.summary ?? cachedSummary ?? "";
+          fetchedType = data?.fields?.issuetype?.name;
         }
 
-        logs.value.forEach(l => {
+        logs.value.forEach((l) => {
           if (l.issueKey === k) {
-            if (!l.summary || l.summary === '') l.summary = fetchedSummary
-            if (!l.issueType && fetchedType) l.issueType = fetchedType
+            if (!l.summary || l.summary === "") l.summary = fetchedSummary;
+            if (!l.issueType && fetchedType) l.issueType = fetchedType;
           }
-        })
+        });
       } catch {
         /* ignore fetch errors – leave attributes blank if retrieval fails */
       }
     })
-  )
+  );
 }
 
 async function loadMoreSuggestions() {
@@ -1018,7 +1126,11 @@ async function loadMoreSuggestions() {
       body: JSON.stringify(body),
     });
     const newItems =
-      res.issues?.map((i) => ({ key: i.key, summary: i.fields.summary, issueType: i.fields.issuetype?.name })) ?? [];
+      res.issues?.map((i) => ({
+        key: i.key,
+        summary: i.fields.summary,
+        issueType: i.fields.issuetype?.name,
+      })) ?? [];
     suggestions.value.push(...newItems);
 
     suggestionPageStart.value += newItems.length;
@@ -1045,9 +1157,9 @@ function adjustDurationToLimit() {
 
 // Utility: convert decimal hours to "H:MMh" string (e.g., 1.5 → "1:30h")
 function formatHours(val) {
-  const totalMinutes = Math.round(val * 60)
-  const h = Math.floor(totalMinutes / 60)
-  const m = totalMinutes % 60
-  return `${h}:${m.toString().padStart(2, '0')}h`
+  const totalMinutes = Math.round(val * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${h}:${m.toString().padStart(2, "0")}h`;
 }
 </script>

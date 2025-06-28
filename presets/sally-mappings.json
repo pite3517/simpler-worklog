@@ -1,0 +1,14 @@
+[
+  { "title": "Sally Grooming", "issueKey": "ADM-19" },
+  { "title": "[Sally] Daily Stand up", "issueKey": "ADM-17" },
+  { "title": "Sally Sprint Review", "issueKey": "ADM-18" },
+  { "title": "Sally : Retrospective session", "issueKey": "ADM-18" },
+  { "title": "Sally - Sprint planning", "issueKey": "ADM-16" },
+  { "title": "[Mandatory]", "issueKey": "ADM-13" },
+  { "title": "1on1", "issueKey": "ADM-13" },
+  { "title": "sharing", "issueKey": "ADM-20" },
+  { "title": "Engineering Mini Townhall", "issueKey": "ADM-13" },
+  { "title": "holiday", "issueKey": "ADM-1" },
+  { "title": "Sprint Goal - Health Check", "issueKey": "ADM-13" },
+  { "title": "Frontend Meeting", "issueKey": "ADM-13" }
+]

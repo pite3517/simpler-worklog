@@ -1,0 +1,12 @@
+[
+  { "title": "[Pangyo] Grooming #1", "issueKey": "ADM-19" },
+  { "title": "[Pangyo] Daily Scrum", "issueKey": "ADM-17" },
+  { "title": "[Pangyo] Sprint Planing, Review, Retro", "issueKey": "ADM-18" },
+  { "title": "[Pangyo] Sprint Planning", "issueKey": "ADM-16" },
+  { "title": "[Mandatory]", "issueKey": "ADM-13" },
+  { "title": "1on1", "issueKey": "ADM-13" },
+  { "title": "sharing", "issueKey": "ADM-20" },
+  { "title": "React Native bi-weekly and catchup", "issueKey": "ADM-13" },
+  { "title": "Engineering Mini Townhall", "issueKey": "ADM-13" },
+  { "title": "holiday", "issueKey": "ADM-1" }
+]
