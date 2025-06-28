@@ -14,24 +14,24 @@
             "
             @click="confirmAutoFillFromCalendar"
           >
-            <Icon name="lucide:calendar-plus" class="w-4 h-4 mr-1" />
+            <Icon name="lucide:calendar-plus" class="w-4 h-4" />
             Fill from Calendar
           </button>
-          <button
-            class="btn btn-primary"
-            title="How to use Fill from Calendar"
-            @click="showCalInfo = true"
-          >
-            <Icon name="lucide:help-circle" class="w-4 h-4" />
-          </button>
         </div>
+        <button
+          class="btn btn-primary mr-8"
+          title="How to use Fill from Calendar"
+          @click="showCalInfo = true"
+        >
+          <Icon name="lucide:help-circle" class="w-4 h-4" />
+        </button>
         <button
           class="btn btn-secondary"
           :disabled="autoFilling || !hasCreds || calendarLoading"
           @click="confirmAutoFill"
         >
-          <Icon name="lucide:zap" class="w-4 h-4 mr-1" />
-          Auto-Fill Ceremonies
+          <Icon name="lucide:zap" class="w-4 h-4" />
+          Auto-Fill Ceremonies (Sally)
         </button>
         <input
           ref="fileInput"
@@ -39,7 +39,7 @@
           accept=".ics"
           style="display: none"
           @change="handleFileSelect"
-        />
+        >
       </ClientOnly>
     </div>
     <CalendarMonth ref="calRef" @day-selected="onDaySelected" />
@@ -66,23 +66,23 @@
         <h3 class="font-bold text-lg mb-2">How to use "Fill from Calendar"</h3>
         <ol class="list-decimal list-inside space-y-2 text-sm">
           <li>
-            <strong>Export an .ics file from Google Calendar</strong><br />
+            <strong>Export an .ics file from Google Calendar</strong><br >
             In Google Calendar, hover your calendar →
             <em>Settings &amp; sharing</em> → "Integrate calendar" →
             <em>Export</em>. Un-zip the download to get the *.ics* file.
           </li>
           <li>
-            <strong>Upload the .ics file</strong><br />
+            <strong>Upload the .ics file</strong><br >
             Open <em>Configure</em> → "Upload your calendar (.ics)" → select the
             file. The file is saved locally for future use.
           </li>
           <li>
-            <strong>Configure title mappings</strong><br />
+            <strong>Configure title mappings</strong><br >
             Either pick a Team Preset or edit rows so event titles map to Jira
             issue keys.
           </li>
           <li>
-            <strong>Run Fill from Calendar</strong><br />
+            <strong>Run Fill from Calendar</strong><br >
             Back on the main view, click this button. The app logs matching
             events for the month to Jira, skipping duplicates.
           </li>
