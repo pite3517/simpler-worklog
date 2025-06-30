@@ -42,7 +42,7 @@
                       v-if="log.issueType"
                       :src="issueTypeIcon(log.issueType)"
                       class="w-4 h-4"
-                    />
+                    >
                     <a
                       :href="`https://linemanwongnai.atlassian.net/browse/${log.issueKey}`"
                       target="_blank"
@@ -138,7 +138,7 @@
               v-if="iss.issueType"
               :src="issueTypeIcon(iss.issueType)"
               class="w-4 h-4"
-            />
+            >
             <span class="font-mono font-semibold">{{ iss.key }}</span>
             <span class="truncate">{{ iss.summary }}</span>
           </li>
@@ -179,10 +179,11 @@
             class="input input-sm input-bordered flex-1 min-w-40"
             @keyup.enter.prevent="addManual"
             @paste="onPasteIssue"
-          />
+          >
           <div class="flex items-center gap-1">
             <button class="btn btn-xs" @click="bump(-1)">-1h</button>
             <button class="btn btn-xs" @click="bump(-0.5)">-30m</button>
+            <button class="btn btn-xs" @click="bump(-0.25)">-15m</button>
             <span
               :class="[
                 'font-mono',
@@ -194,6 +195,7 @@
               ]"
               >{{ formatHours(duration) }}</span
             >
+            <button class="btn btn-xs" @click="bump(0.25)">+15m</button>
             <button class="btn btn-xs" @click="bump(0.5)">+30m</button>
             <button class="btn btn-xs" @click="bump(1)">+1h</button>
             <button class="btn btn-xs" @click="bump(5)">+5h</button>
@@ -214,7 +216,7 @@
               v-if="searchedIssue.issueType"
               :src="issueTypeIcon(searchedIssue.issueType)"
               class="w-4 h-4 mr-1"
-            />
+            >
             <a
               :href="`https://linemanwongnai.atlassian.net/browse/${searchedIssue.key}`"
               target="_blank"
@@ -239,7 +241,7 @@
               v-if="s.issueType"
               :src="issueTypeIcon(s.issueType)"
               class="w-4 h-4"
-            />
+            >
             <span class="font-mono font-semibold">{{ s.key }}</span>
             <span class="truncate">{{ s.summary }}</span>
           </li>
@@ -765,12 +767,12 @@ function onPasteIssue(e) {
 // --- Utility helpers & actions -------------------------------------------------
 
 function bump(delta) {
-  // Adjust duration in 0.5-hour granularity, floor at 0.5, cap at 8
+  // Adjust duration in 0.25-hour granularity (15-minute steps), floor at 0.25, cap at 8
   const remaining = remainingHours();
   if (remaining <= 0) return;
   const nextRaw = duration.value + delta;
-  const next = Math.round(nextRaw * 2) / 2; // keep 0.5 steps for buttons
-  const capped = Math.min(Math.max(next, 0.5), remaining);
+  const next = Math.round(nextRaw * 4) / 4; // keep 0.25h steps
+  const capped = Math.min(Math.max(next, 0.25), remaining);
   duration.value = parseFloat(capped.toFixed(2));
 
   // If bump resulted in capping to remaining hours, mark as reduced
