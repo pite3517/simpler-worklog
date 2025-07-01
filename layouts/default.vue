@@ -13,7 +13,14 @@
         <span class="text-lg font-bold">Workly</span>
       </div>
       <div class="ml-auto mr-2 flex items-center gap-2">
-        <button class="btn btn-soft btn-sm ml-1" :disabled="calendarLoading" @click="showAuthModal = true">
+        <button class="btn btn-soft btn-sm" @click="showConfigModal = true">
+          Configure
+        </button>
+        <button
+          class="btn btn-soft btn-sm ml-1"
+          :disabled="calendarLoading"
+          @click="showAuthModal = true"
+        >
           <ClientOnly>
             <template #fallback>Set Token</template>
             <span v-if="token">Change Token</span>
@@ -32,7 +39,7 @@
                 class="capitalize flex items-center justify-between w-full"
                 :data-set-theme="theme"
                 data-act-class="active"
-                :class="{ 'active': currentTheme === theme }"
+                :class="{ active: currentTheme === theme }"
                 @click="currentTheme = theme"
               >
                 <span>{{ theme }}</span>
@@ -45,7 +52,11 @@
                   stroke="currentColor"
                   stroke-width="3"
                 >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </button>
             </li>
@@ -53,6 +64,11 @@
         </div>
       </div>
     </div>
+
+    <CeremonyConfigModal
+      :visible="showConfigModal"
+      @close="showConfigModal = false"
+    />
 
     <!-- Page slot -->
     <main class="flex-1 container mx-auto p-4">
@@ -68,71 +84,74 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useJiraCredentials } from '~/composables/useJiraCredentials'
-import AuthenticationModal from '~/components/AuthenticationModal.vue'
-import ToastProvider from '~/components/ToastProvider.vue'
-import { useCalendarLoading } from '~/composables/useCalendarLoading'
-import { useSavingIndicator } from '~/composables/useSavingIndicator'
-import { themeChange } from 'theme-change'
+import { onMounted, ref } from "vue";
+import { useJiraCredentials } from "~/composables/useJiraCredentials";
+import AuthenticationModal from "~/components/AuthenticationModal.vue";
+import ToastProvider from "~/components/ToastProvider.vue";
+import { useCalendarLoading } from "~/composables/useCalendarLoading";
+import { useSavingIndicator } from "~/composables/useSavingIndicator";
+import { themeChange } from "theme-change";
+import CeremonyConfigModal from "~/components/CeremonyConfigModal.vue";
 
-const { token } = useJiraCredentials()
-const showAuthModal = ref(false)
-const { loading: calendarLoading } = useCalendarLoading()
-const { saving } = useSavingIndicator()
+const { token } = useJiraCredentials();
+const showAuthModal = ref(false);
+const { loading: calendarLoading } = useCalendarLoading();
+const { saving } = useSavingIndicator();
+const showConfigModal = ref(false);
 
 const themes = [
-  'light',
-  'dark',
-  'cupcake',
-  'bumblebee',
-  'emerald',
-  'corporate',
-  'synthwave',
-  'retro',
-  'cyberpunk',
-  'valentine',
-  'halloween',
-  'garden',
-  'forest',
-  'aqua',
-  'lofi',
-  'pastel',
-  'fantasy',
-  'wireframe',
-  'black',
-  'luxury',
-  'dracula',
-  'cmyk',
-  'autumn',
-  'business',
-  'acid',
-  'lemonade',
-  'night',
-  'coffee',
-  'winter',
-  'dim',
-  'nord',
-  'sunset',
-  'caramellatte',
-  'abyss',
-  'silk',
-]
+  "light",
+  "dark",
+  "cupcake",
+  "bumblebee",
+  "emerald",
+  "corporate",
+  "synthwave",
+  "retro",
+  "cyberpunk",
+  "valentine",
+  "halloween",
+  "garden",
+  "forest",
+  "aqua",
+  "lofi",
+  "pastel",
+  "fantasy",
+  "wireframe",
+  "black",
+  "luxury",
+  "dracula",
+  "cmyk",
+  "autumn",
+  "business",
+  "acid",
+  "lemonade",
+  "night",
+  "coffee",
+  "winter",
+  "dim",
+  "nord",
+  "sunset",
+  "caramellatte",
+  "abyss",
+  "silk",
+];
 
 // Track currently active theme so dropdown shows it as selected on load
-const currentTheme = ref('')
+const currentTheme = ref("");
 
 // On first client render, open modal if token is missing
 onMounted(() => {
   // Initialise theme-change for dropdown binding
-  themeChange(false)
+  themeChange(false);
 
   // Set initial active theme based on html[data-theme] attribute
-  if (typeof document !== 'undefined') {
-    currentTheme.value = document.documentElement.getAttribute('data-theme') ?? 'light'
+  if (typeof document !== "undefined") {
+    currentTheme.value =
+      document.documentElement.getAttribute("data-theme") ?? "light";
   }
   if (!token.value) {
-    showAuthModal.value = true
+    showAuthModal.value = true;
   }
-})
-</script> 
+});
+</script>

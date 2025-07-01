@@ -10,7 +10,15 @@
       <!-- Upload calendar section -->
       <div class="form-control mb-4 w-full">
         <label class="label">
-          <span class="font-bold">Upload your calendar (.ics)</span>
+          <span class="font-bold flex items-center gap-2">
+            Upload your calendar (.ics)
+            <Icon
+              v-if="hasStoredIcs"
+              name="lucide:check-circle"
+              class="w-5 h-5 text-success"
+              title="Calendar file is stored"
+            />
+          </span>
         </label>
         <div>
           <!-- Hidden file input for ICS upload -->
@@ -171,13 +179,13 @@
 // @ts-nocheck
 import { useCeremonyConfig } from "~/composables/useCeremonyConfig";
 import { useToastStore } from "~/composables/useToastStore";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 // Import preset CSVs as raw text so we can parse them on demand
 // Using Vite raw plugin syntax – supported by Nuxt 3.
 // Ensure the files exist in project root (or move to assets if needed)
 import sallyMappings from "~/presets/sally-mappings.json";
 import pangyoMappings from "~/presets/pangyo-mappings.json";
-import { saveIcsContent } from "~/composables/useIcsStorage";
+import { saveIcsContent, storedIcs } from "~/composables/useIcsStorage";
 
 defineProps({
   visible: Boolean,
@@ -226,6 +234,8 @@ const csvUploading = ref(false);
 
 // ICS handling
 const icsFileInput = ref(null);
+
+const hasStoredIcs = computed(() => !!storedIcs.value);
 
 function addNewConfig() {
   addConfig({ title: "", issueKey: "" });
