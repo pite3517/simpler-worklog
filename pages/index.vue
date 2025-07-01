@@ -2,9 +2,6 @@
   <div>
     <div class="mb-4 flex justify-end gap-2">
       <ClientOnly>
-        <button class="btn btn-ghost" @click="showConfigModal = true">
-          Configure
-        </button>
         <!-- Fill from Calendar group -->
         <div class="flex items-center gap-1">
           <button
@@ -47,10 +44,6 @@
       :visible="showWorklog"
       :date="selectedDate"
       @close="showWorklog = false"
-    />
-    <CeremonyConfigModal
-      :visible="showConfigModal"
-      @close="showConfigModal = false"
     />
 
     <dialog v-if="autoFilling" class="modal modal-open">
@@ -107,7 +100,6 @@
 // @ts-nocheck
 import CalendarMonth from "~/components/CalendarMonth.vue";
 import WorklogModal from "~/components/WorklogModal.vue";
-import CeremonyConfigModal from "~/components/CeremonyConfigModal.vue";
 import { ref, computed } from "vue";
 import { jiraFetch } from "~/composables/useJiraApi";
 import { useWorklogStore } from "~/composables/useWorklogStore";
@@ -139,7 +131,6 @@ dayjs.tz.setDefault("Asia/Bangkok");
 const selectedDate = ref(null);
 const showWorklog = ref(false);
 const autoFilling = ref(false);
-const showConfigModal = ref(false);
 const showCalInfo = ref(false);
 const calRef = ref(null);
 const fileInput = ref(null);
