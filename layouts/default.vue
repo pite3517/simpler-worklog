@@ -17,7 +17,7 @@
           Configure
         </button>
         <button
-          class="btn btn-soft btn-sm ml-1"
+          class="btn btn-soft btn-sm"
           :disabled="calendarLoading"
           @click="showAuthModal = true"
         >
