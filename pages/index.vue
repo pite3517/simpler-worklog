@@ -62,7 +62,7 @@
     <dialog v-if="showCalInfo" class="modal modal-open">
       <div class="modal-box max-w-2xl">
         <h3 class="font-bold text-lg mb-2">How to use "Fill from Calendar"</h3>
-        <ol class="list-decimal list-inside space-y-2 text-sm">
+        <ol class="list-decimal list-inside space-y-3 text-sm">
           <li>
             <strong>Export an .ics file from Google Calendar</strong><br />
             In Google Calendar, hover your calendar →
@@ -70,26 +70,41 @@
             <em>Export</em>. Un-zip the download to get the *.ics* file.
           </li>
           <li>
-            <strong>Click "Fill from Calendar (.ics)"</strong><br />
-            Click this button and select your .ics file when prompted. The app
-            will automatically extract all unique event titles from your
-            calendar and open the configuration modal with these titles
+            <strong>Click "Fill from Calendar" and select your file</strong
+            ><br />
+            The app will automatically parse your calendar events, group them by
+            title, and open the configuration modal with unique event titles
             pre-filled.
           </li>
           <li>
-            <strong>Select a Team Preset</strong><br />
-            In the configuration modal, select a team preset (Sally or Pangyo)
-            from the dropdown. The app will automatically match your calendar
-            event titles with the preset mappings and fill in the corresponding
-            JIRA issue keys.
+            <strong>Auto-matching from saved configurations</strong><br />
+            If you've used this feature before, the app will automatically fill
+            in JIRA issue keys for event titles that match your previously saved
+            mappings.
           </li>
           <li>
-            <strong>Review and Save</strong><br />
-            Review the auto-matched mappings, make any manual adjustments if
-            needed, then click "Save" to apply the configuration and start
-            logging events to JIRA.
-            <strong>Note:</strong> You'll need to select the .ics file each time
-            you use this feature.
+            <strong>Configure JIRA issue mappings</strong><br />
+            For each event type:
+            <ul class="list-disc list-inside ml-4 mt-1 space-y-1">
+              <li>
+                Type in the JIRA Issue field to see autocomplete suggestions
+              </li>
+              <li>
+                Select from dropdown or enter issue key manually (e.g., ADM-6)
+              </li>
+              <li>
+                Use team presets (Sally/Pangyo) to auto-fill multiple mappings
+              </li>
+              <li>Review dates and hours for each event type</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Save and create work logs</strong><br />
+            Click "Save" to store your mappings for future auto-matching and
+            automatically create work log entries in JIRA for all configured
+            events.
+            <br /><strong>Note:</strong> You need to upload the .ics file each
+            time, but your issue key mappings are saved for future sessions.
           </li>
         </ol>
 
@@ -516,11 +531,20 @@ async function openConfigureWithAutoFilledTitles(icsContent) {
       const hours = Math.round(endTime.diff(startTime, "minute") / 15) * 0.25; // Round to nearest 0.25 hour
 
       if (!eventMap.has(title)) {
-        eventMap.set(title, {
+        eventMap.set(
           title,
-          issueKey: "", // Will be filled by user or preset
-          dates: [],
-        });
+          reactive({
+            title,
+            issueKey: "", // Will be filled by user or preset
+            dates: [],
+            // Initialize search-related reactive properties
+            suggestions: [],
+            searching: false,
+            issueSummary: null,
+            issueType: null,
+            issueError: null,
+          })
+        );
       }
 
       eventMap.get(title).dates.push({

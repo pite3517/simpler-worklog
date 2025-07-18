@@ -83,13 +83,11 @@ import ToastProvider from "~/components/ToastProvider.vue";
 import { useCalendarLoading } from "~/composables/useCalendarLoading";
 import { useSavingIndicator } from "~/composables/useSavingIndicator";
 import { themeChange } from "theme-change";
-import CeremonyConfigModal from "~/components/CeremonyConfigModal.vue";
 
 const { token } = useJiraCredentials();
 const showAuthModal = ref(false);
 const { loading: calendarLoading } = useCalendarLoading();
 const { saving } = useSavingIndicator();
-const showConfigModal = ref(false);
 
 const themes = [
   "light",

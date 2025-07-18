@@ -116,7 +116,7 @@ export function useCeremonyConfig() {
 
   return {
     configs: readonly(configs), // Make configs readonly to prevent direct mutation
-    eventData: readonly(eventData),
+    eventData, // Keep eventData mutable for JIRA search functionality
     addConfig,
     removeConfig,
     setConfigs,
