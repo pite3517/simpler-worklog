@@ -114,8 +114,9 @@ defineProps({
 const emit = defineEmits(["close", "saved"]);
 
 const {
+  configs,
   eventData,
-  addConfig,
+  // addConfig,
   saveConfigs: saveConfigsToStore,
   setConfigs,
   // setEventData,
@@ -176,11 +177,40 @@ function onPresetChange(event) {
   }
 }
 
-function addNewConfig() {
-  addConfig({ title: "", issueKey: "" });
-}
+// addNewConfig function removed as it's not used anymore
 
 function saveConfigs() {
+  // Save any event data mappings to persistent configs for future auto-matching
+  if (eventData.value.length > 0) {
+    const updatedConfigs = [...configs.value];
+
+    eventData.value.forEach((event) => {
+      if (event.issueKey) {
+        // Check if this title pattern already exists in configs
+        const existingConfigIndex = updatedConfigs.findIndex(
+          (config) =>
+            config.title.toLowerCase() === event.title.toLowerCase() ||
+            config.title.toLowerCase().includes(event.title.toLowerCase()) ||
+            event.title.toLowerCase().includes(config.title.toLowerCase())
+        );
+
+        if (existingConfigIndex >= 0) {
+          // Update existing config
+          updatedConfigs[existingConfigIndex].issueKey = event.issueKey;
+        } else {
+          // Add new config
+          updatedConfigs.push({
+            title: event.title,
+            issueKey: event.issueKey,
+          });
+        }
+      }
+    });
+
+    // Update the configs
+    setConfigs(updatedConfigs);
+  }
+
   saveConfigsToStore();
   addToast("Configuration saved!", "success");
   emit("saved");

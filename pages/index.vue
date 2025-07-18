@@ -532,13 +532,39 @@ async function openConfigureWithAutoFilledTitles(icsContent) {
     // Convert map to array
     const uniqueEvents = Array.from(eventMap.values());
 
+    // Auto-fill issue keys from saved ceremony-mappings
+    let matchedCount = 0;
+    if (ceremonyConfigs.value && ceremonyConfigs.value.length > 0) {
+      uniqueEvents.forEach((event) => {
+        // Find matching config by checking if event title contains config title or vice versa
+        const matchingConfig = ceremonyConfigs.value.find(
+          (config) =>
+            event.title.toLowerCase().includes(config.title.toLowerCase()) ||
+            config.title.toLowerCase().includes(event.title.toLowerCase())
+        );
+
+        if (matchingConfig && matchingConfig.issueKey) {
+          event.issueKey = matchingConfig.issueKey;
+          matchedCount++;
+        }
+      });
+    }
+
     // Set the event data and open the modal
     setEventData(uniqueEvents);
     showConfigModal.value = true;
-    addToast(
-      `Found ${uniqueEvents.length} unique event types with ${calendarEvents.length} total events. Configure issue key mappings and select a team preset.`,
-      "info"
-    );
+
+    if (matchedCount > 0) {
+      addToast(
+        `Found ${uniqueEvents.length} unique event types (${matchedCount} auto-filled from saved mappings). Review and adjust as needed.`,
+        "success"
+      );
+    } else {
+      addToast(
+        `Found ${uniqueEvents.length} unique event types with ${calendarEvents.length} total events. Configure issue key mappings and select a team preset.`,
+        "info"
+      );
+    }
   } catch (error) {
     console.error("Error parsing calendar events:", error);
     addToast(
