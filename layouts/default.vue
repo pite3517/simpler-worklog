@@ -13,9 +13,6 @@
         <span class="text-lg font-bold">Workly</span>
       </div>
       <div class="ml-auto mr-2 flex items-center gap-2">
-        <button class="btn btn-soft btn-sm" @click="showConfigModal = true">
-          Configure
-        </button>
         <button
           class="btn btn-soft btn-sm ml-1"
           :disabled="calendarLoading"
@@ -64,11 +61,6 @@
         </div>
       </div>
     </div>
-
-    <CeremonyConfigModal
-      :visible="showConfigModal"
-      @close="showConfigModal = false"
-    />
 
     <!-- Page slot -->
     <main class="flex-1 container mx-auto p-4">

@@ -6,13 +6,12 @@
         <div class="flex items-center gap-1">
           <button
             class="btn btn-primary"
-            :disabled="
-              autoFilling || !hasCreds || calendarLoading || !hasStoredIcs
-            "
+            :disabled="autoFilling || !hasCreds || calendarLoading"
+            title="Upload .ics file and configure event mappings with team presets"
             @click="confirmAutoFillFromCalendar"
           >
             <Icon name="lucide:calendar-plus" class="w-4 h-4" />
-            Fill from Calendar
+            Fill from Calendar (.ics)
           </button>
         </div>
         <button
@@ -36,7 +35,7 @@
           accept=".ics"
           style="display: none"
           @change="handleFileSelect"
-        >
+        />
       </ClientOnly>
     </div>
     <CalendarMonth ref="calRef" @day-selected="onDaySelected" />
@@ -44,6 +43,12 @@
       :visible="showWorklog"
       :date="selectedDate"
       @close="showWorklog = false"
+    />
+
+    <CeremonyConfigModal
+      :visible="showConfigModal"
+      @close="showConfigModal = false"
+      @saved="onConfigSaved"
     />
 
     <dialog v-if="autoFilling" class="modal modal-open">
@@ -59,25 +64,32 @@
         <h3 class="font-bold text-lg mb-2">How to use "Fill from Calendar"</h3>
         <ol class="list-decimal list-inside space-y-2 text-sm">
           <li>
-            <strong>Export an .ics file from Google Calendar</strong><br >
+            <strong>Export an .ics file from Google Calendar</strong><br />
             In Google Calendar, hover your calendar →
             <em>Settings &amp; sharing</em> → "Integrate calendar" →
             <em>Export</em>. Un-zip the download to get the *.ics* file.
           </li>
           <li>
-            <strong>Upload the .ics file</strong><br >
-            Open <em>Configure</em> → "Upload your calendar (.ics)" → select the
-            file. The file is saved locally for future use.
+            <strong>Click "Fill from Calendar (.ics)"</strong><br />
+            Click this button and select your .ics file when prompted. The app
+            will automatically extract all unique event titles from your
+            calendar and open the configuration modal with these titles
+            pre-filled.
           </li>
           <li>
-            <strong>Configure title mappings</strong><br >
-            Either pick a Team Preset or edit rows so event titles map to Jira
-            issue keys.
+            <strong>Select a Team Preset</strong><br />
+            In the configuration modal, select a team preset (Sally or Pangyo)
+            from the dropdown. The app will automatically match your calendar
+            event titles with the preset mappings and fill in the corresponding
+            JIRA issue keys.
           </li>
           <li>
-            <strong>Run Fill from Calendar</strong><br >
-            Back on the main view, click this button. The app logs matching
-            events for the month to Jira, skipping duplicates.
+            <strong>Review and Save</strong><br />
+            Review the auto-matched mappings, make any manual adjustments if
+            needed, then click "Save" to apply the configuration and start
+            logging events to JIRA.
+            <strong>Note:</strong> You'll need to select the .ics file each time
+            you use this feature.
           </li>
         </ol>
 
@@ -100,6 +112,7 @@
 // @ts-nocheck
 import CalendarMonth from "~/components/CalendarMonth.vue";
 import WorklogModal from "~/components/WorklogModal.vue";
+import CeremonyConfigModal from "~/components/CeremonyConfigModal.vue";
 import { ref, computed } from "vue";
 import { jiraFetch } from "~/composables/useJiraApi";
 import { useWorklogStore } from "~/composables/useWorklogStore";
@@ -113,11 +126,7 @@ import { useJiraCredentials } from "~/composables/useJiraCredentials";
 import { useCalendarLoading } from "~/composables/useCalendarLoading";
 import { useCeremonyConfig } from "~/composables/useCeremonyConfig";
 import ICAL from "ical.js";
-import {
-  loadIcsContent,
-  saveIcsContent,
-  storedIcs,
-} from "~/composables/useIcsStorage";
+import { setIcsContent, clearIcsContent } from "~/composables/useIcsStorage";
 
 // Extend dayjs with required plugins once
 dayjs.extend(utc);
@@ -132,6 +141,7 @@ const selectedDate = ref(null);
 const showWorklog = ref(false);
 const autoFilling = ref(false);
 const showCalInfo = ref(false);
+const showConfigModal = ref(false);
 const calRef = ref(null);
 const fileInput = ref(null);
 
@@ -139,7 +149,12 @@ const fileInput = ref(null);
 const { getLogs, fetchMonth, addHours, setLogs, markUpdated, getHours } =
   useWorklogStore();
 const { addToast } = useToastStore();
-const { configs: ceremonyConfigs } = useCeremonyConfig();
+const {
+  configs: ceremonyConfigs,
+  eventData,
+  // setConfigs,
+  setEventData,
+} = useCeremonyConfig();
 
 // Check if Jira credentials are present
 const { email, token } = useJiraCredentials();
@@ -151,10 +166,7 @@ const hasCreds = computed(() => {
   return !!email.value && !!token.value;
 });
 
-const hasStoredIcs = computed(() => {
-  if (import.meta.server) return false;
-  return !!storedIcs.value;
-});
+// Note: hasStoredIcs removed - no longer using persistent storage
 
 // Shared calendar loading flag
 const { loading: calendarLoading } = useCalendarLoading();
@@ -459,26 +471,211 @@ function confirmAutoFillFromCalendar() {
   const anchorDate = calRef.value?.getAnchor?.() ?? new Date();
   const monthLabel = dayjs(anchorDate).format("MMM YYYY");
 
-  // If stored ICS exists, offer to use it directly
-  const storedIcs = loadIcsContent();
-  if (storedIcs) {
-    if (
-      confirm(
-        `Use previously stored calendar (.ics) data to fill worklogs for ${monthLabel}?\n` +
-          "Press Cancel to select a new .ics file instead."
-      )
-    ) {
-      autoFillFromCalendar(storedIcs);
-      return;
-    }
-  }
+  // Always require file upload - no persistent storage
   if (
     confirm(
-      `This will parse calendar events from an .ics file for ${monthLabel} and log work based on your ceremony configuration. Please select an .ics file to continue.`
+      `This will parse calendar events from an .ics file for ${monthLabel} and open the configuration with auto-filled event titles. Please select an .ics file to continue.`
     )
   ) {
-    // Trigger file input
+    // Clear any existing session data and trigger file input for auto-fill flow
+    clearIcsContent();
+    isAutoFillFlow.value = true;
     fileInput.value?.click();
+  }
+}
+
+// Track if we're in auto-fill flow to open configure modal after file selection
+const isAutoFillFlow = ref(false);
+
+// Function to extract event information and open configure modal
+async function openConfigureWithAutoFilledTitles(icsContent) {
+  const anchorDate = calRef.value?.getAnchor?.() ?? new Date();
+  const monthStart = dayjs(anchorDate).startOf("month");
+  const monthEnd = dayjs(anchorDate).endOf("month");
+
+  try {
+    // Parse calendar events to extract information
+    const calendarEvents = await fetchCalendarEvents(
+      monthStart.toDate(),
+      monthEnd.toDate(),
+      icsContent
+    );
+
+    if (calendarEvents.length === 0) {
+      addToast("No events found in the selected calendar file.", "warn");
+      return;
+    }
+
+    // Group events by title and collect dates/hours
+    const eventMap = new Map();
+
+    calendarEvents.forEach((event) => {
+      const title = event.summary?.trim() || "Untitled Event";
+      const startTime = dayjs(event.start.dateTime);
+      const endTime = dayjs(event.end.dateTime);
+      const hours = Math.round(endTime.diff(startTime, "minute") / 15) * 0.25; // Round to nearest 0.25 hour
+
+      if (!eventMap.has(title)) {
+        eventMap.set(title, {
+          title,
+          issueKey: "", // Will be filled by user or preset
+          dates: [],
+        });
+      }
+
+      eventMap.get(title).dates.push({
+        date: startTime.format("YYYY-MM-DD"),
+        hours: Math.max(0.25, hours), // Minimum 0.25 hours
+      });
+    });
+
+    // Convert map to array
+    const uniqueEvents = Array.from(eventMap.values());
+
+    // Set the event data and open the modal
+    setEventData(uniqueEvents);
+    showConfigModal.value = true;
+    addToast(
+      `Found ${uniqueEvents.length} unique event types with ${calendarEvents.length} total events. Configure issue key mappings and select a team preset.`,
+      "info"
+    );
+  } catch (error) {
+    console.error("Error parsing calendar events:", error);
+    addToast(
+      "Failed to parse calendar events. Please check your .ics file.",
+      "error"
+    );
+  }
+}
+
+// Handle when config modal is saved - trigger auto-fill
+async function onConfigSaved() {
+  autoFilling.value = true;
+
+  try {
+    // Get event data with configured issue keys
+    const validEvents = eventData.value.filter((event) => event.issueKey);
+
+    if (validEvents.length === 0) {
+      addToast(
+        "No valid event mappings found. Please configure issue keys.",
+        "warn"
+      );
+      return;
+    }
+
+    await fetchMonth(new Date()); // Ensure month data is loaded
+
+    const creations = [];
+    const hoursByDay = {};
+    const newLogsByDate = {};
+
+    for (const event of validEvents) {
+      for (const dateEntry of event.dates) {
+        const workDate = new Date(dateEntry.date + "T00:00:00");
+        const existing = getLogs(workDate);
+
+        // Check for duplicates
+        const isDuplicate = existing.some(
+          (l) =>
+            l.issueKey === event.issueKey &&
+            l.timeSpentSeconds === Math.round(dateEntry.hours * 3600)
+        );
+
+        if (isDuplicate) {
+          console.log(
+            `Skipping duplicate: ${event.title} on ${dateEntry.date}`
+          );
+          continue;
+        }
+
+        // Check 8-hour daily limit
+        const existingHours = existing.reduce(
+          (s, l) => s + (l.timeSpentSeconds ?? 0) / 3600,
+          0
+        );
+
+        if (existingHours + dateEntry.hours > 8) {
+          console.log(
+            `Skipping ${event.title} on ${dateEntry.date} - would exceed 8h limit`
+          );
+          continue;
+        }
+
+        // Queue for creation
+        creations.push({
+          date: workDate,
+          issueKey: event.issueKey,
+          hours: dateEntry.hours,
+          title: event.title,
+        });
+
+        // Track for local storage update
+        const dateKey = dayjs(workDate).format("YYYY-MM-DD");
+        if (!newLogsByDate[dateKey]) newLogsByDate[dateKey] = [];
+        hoursByDay[dateKey] = (hoursByDay[dateKey] || 0) + dateEntry.hours;
+      }
+    }
+
+    if (creations.length === 0) {
+      addToast(
+        "No new work logs to create (all would be duplicates or exceed limits).",
+        "info"
+      );
+      return;
+    }
+
+    addToast(`Creating ${creations.length} work log entries...`, "info");
+
+    // Process creations in parallel batches of 20
+    const batchSize = 20;
+    for (let i = 0; i < creations.length; i += batchSize) {
+      const batch = creations.slice(i, i + batchSize);
+      const results = await Promise.all(
+        batch.map((item) => createWorklog(item.issueKey, item.hours, item.date))
+      );
+
+      results.forEach((resp, idx) => {
+        const c = batch[idx];
+        const dateKey = dayjs(c.date).format("YYYY-MM-DD");
+        newLogsByDate[dateKey].push({
+          id: resp?.id ?? "auto-" + Date.now() + "-" + idx,
+          issueKey: c.issueKey,
+          summary: c.title,
+          timeSpentSeconds: Math.round(c.hours * 3600),
+        });
+      });
+    }
+
+    // Update local storage
+    Object.entries(hoursByDay).forEach(([dateKey, hrs]) => {
+      const dateObj = new Date(`${dateKey}T00:00:00`);
+      const prevHours = getHours(dateObj);
+      addHours(dateObj, hrs);
+      const newHours = getHours(dateObj);
+      markUpdated(dateObj, prevHours, newHours);
+    });
+
+    // Merge newly created logs into central store
+    Object.entries(newLogsByDate).forEach(([dateKey, items]) => {
+      const dateObj = new Date(`${dateKey}T00:00:00`);
+      const merged = [...getLogs(dateObj), ...items];
+      setLogs(dateObj, merged);
+    });
+
+    await fetchMonth(new Date()); // Refresh to show updated data
+    addToast(
+      `Successfully logged ${creations.length} work entries from calendar!`,
+      "success"
+    );
+  } catch (error) {
+    console.error("Error during auto-fill:", error);
+    addToast(
+      "Failed to auto-fill work logs. See console for details.",
+      "error"
+    );
+  } finally {
+    autoFilling.value = false;
   }
 }
 
@@ -493,12 +690,21 @@ async function handleFileSelect(event) {
 
   try {
     const content = await readFileAsText(file);
-    // Persist for future convenience
-    saveIcsContent(String(content));
-    await autoFillFromCalendar(String(content));
+    // Store for current session only
+    setIcsContent(String(content));
+
+    if (isAutoFillFlow.value) {
+      // Extract event titles and open configure modal
+      isAutoFillFlow.value = false;
+      await openConfigureWithAutoFilledTitles(String(content));
+    } else {
+      // Direct auto-fill (legacy flow, if needed)
+      await autoFillFromCalendar(String(content));
+    }
   } catch (err) {
     console.error("Error reading file:", err);
     addToast("Failed to read the .ics file.", "error");
+    isAutoFillFlow.value = false;
   } finally {
     // Reset file input
     if (fileInput.value) {
