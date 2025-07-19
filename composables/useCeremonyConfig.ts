@@ -1,8 +1,19 @@
 import { ref, watch, readonly } from "vue";
 
+// CeremonyConfig: Persistent mapping of title to issue key
 export interface CeremonyConfig {
   title: string;
   issueKey: string;
+}
+
+// EventData: Calendar event with date and time tracking
+export interface EventData {
+  title: string;
+  issueKey: string;
+  dates: Array<{
+    date: string; // YYYY-MM-DD format
+    hours: number;
+  }>;
 }
 
 const configKey = "ceremony-mappings";
@@ -12,8 +23,9 @@ const defaultConfig: CeremonyConfig[] = [
   { title: "Refinement", issueKey: "ADM-18" },
 ];
 
-// Global store state - similar to React context
+// Global store state
 const configs = ref<CeremonyConfig[]>([]);
+const eventData = ref<EventData[]>([]);
 let isInitialized = false;
 
 // Store initialization
@@ -24,11 +36,20 @@ const initializeStore = () => {
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      // Basic migration for users who had the old config with `hours`
-      configs.value = parsed.map((c: any) => ({
-        title: c.title,
-        issueKey: c.issueKey,
-      }));
+      // Migration: ensure array format
+      if (Array.isArray(parsed)) {
+        configs.value = parsed.map((c: any) => ({
+          title: c.title || "",
+          issueKey: c.issueKey || "",
+        }));
+      } else {
+        // Convert old object format to array
+        const migrated: CeremonyConfig[] = [];
+        Object.entries(parsed).forEach(([title, issueKey]) => {
+          migrated.push({ title, issueKey: issueKey as string });
+        });
+        configs.value = migrated;
+      }
     } catch (error) {
       console.error(
         "Failed to parse ceremony config from localStorage:",
@@ -76,6 +97,10 @@ const setConfigs = (newConfigs: CeremonyConfig[]) => {
   configs.value = newConfigs;
 };
 
+const setEventData = (newEventData: EventData[]) => {
+  eventData.value = newEventData;
+};
+
 const saveConfigs = () => {
   saveToStorage();
 };
@@ -91,9 +116,11 @@ export function useCeremonyConfig() {
 
   return {
     configs: readonly(configs), // Make configs readonly to prevent direct mutation
+    eventData, // Keep eventData mutable for JIRA search functionality
     addConfig,
     removeConfig,
     setConfigs,
+    setEventData,
     saveConfigs,
     loadConfigs,
   };

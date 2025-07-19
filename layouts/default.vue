@@ -13,9 +13,6 @@
         <span class="text-lg font-bold">Workly</span>
       </div>
       <div class="ml-auto mr-2 flex items-center gap-2">
-        <button class="btn btn-soft btn-sm" @click="showConfigModal = true">
-          Configure
-        </button>
         <button
           class="btn btn-soft btn-sm"
           :disabled="calendarLoading"
@@ -65,11 +62,6 @@
       </div>
     </div>
 
-    <CeremonyConfigModal
-      :visible="showConfigModal"
-      @close="showConfigModal = false"
-    />
-
     <!-- Page slot -->
     <main class="flex-1 container mx-auto p-4">
       <slot />
@@ -91,13 +83,11 @@ import ToastProvider from "~/components/ToastProvider.vue";
 import { useCalendarLoading } from "~/composables/useCalendarLoading";
 import { useSavingIndicator } from "~/composables/useSavingIndicator";
 import { themeChange } from "theme-change";
-import CeremonyConfigModal from "~/components/CeremonyConfigModal.vue";
 
 const { token } = useJiraCredentials();
 const showAuthModal = ref(false);
 const { loading: calendarLoading } = useCalendarLoading();
 const { saving } = useSavingIndicator();
-const showConfigModal = ref(false);
 
 const themes = [
   "light",
