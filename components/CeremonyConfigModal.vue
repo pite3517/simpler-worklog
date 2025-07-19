@@ -22,9 +22,6 @@
               :class="{ 'text-blue-600 font-medium': eventData.length > 0 }"
             >
               Team preset
-              <span v-if="eventData.length > 0" class="text-blue-600">
-                (recommended)
-              </span>
             </span>
           </label>
           <select
@@ -211,6 +208,8 @@ function loadPreset(key) {
       if (matchingPreset) {
         event.issueKey = matchingPreset.issueKey;
         matchedCount++;
+      } else {
+        event.issueKey = null;
       }
     });
 
