@@ -35,7 +35,7 @@
           accept=".ics"
           style="display: none"
           @change="handleFileSelect"
-        />
+        >
       </ClientOnly>
     </div>
     <CalendarMonth ref="calRef" @day-selected="onDaySelected" />
@@ -64,26 +64,26 @@
         <h3 class="font-bold text-lg mb-2">How to use "Fill from Calendar"</h3>
         <ol class="list-decimal list-inside space-y-3 text-sm">
           <li>
-            <strong>Export an .ics file from Google Calendar</strong><br />
+            <strong>Export an .ics file from Google Calendar</strong><br >
             In Google Calendar, hover your calendar →
             <em>Settings &amp; sharing</em> → "Integrate calendar" →
             <em>Export</em>. Un-zip the download to get the *.ics* file.
           </li>
           <li>
             <strong>Click "Fill from Calendar" and select your file</strong
-            ><br />
+            ><br >
             The app will automatically parse your calendar events, group them by
             title, and open the configuration modal with unique event titles
             pre-filled.
           </li>
           <li>
-            <strong>Auto-matching from saved configurations</strong><br />
+            <strong>Auto-matching from saved configurations</strong><br >
             If you've used this feature before, the app will automatically fill
             in JIRA issue keys for event titles that match your previously saved
             mappings.
           </li>
           <li>
-            <strong>Configure JIRA issue mappings</strong><br />
+            <strong>Configure JIRA issue mappings</strong><br >
             For each event type:
             <ul class="list-disc list-inside ml-4 mt-1 space-y-1">
               <li>
@@ -99,11 +99,11 @@
             </ul>
           </li>
           <li>
-            <strong>Save and create work logs</strong><br />
+            <strong>Save and create work logs</strong><br >
             Click "Save" to store your mappings for future auto-matching and
             automatically create work log entries in JIRA for all configured
             events.
-            <br /><strong>Note:</strong> You need to upload the .ics file each
+            <br ><strong>Note:</strong> You need to upload the .ics file each
             time, but your issue key mappings are saved for future sessions.
           </li>
         </ol>
@@ -338,7 +338,6 @@ function ceremonyTasksForDate(d) {
       tasks.push({ issueKey: "ADM-17", hours: 0.25 });
     } else if (weekday === 5) {
       tasks.push({ issueKey: "ADM-17", hours: 0.25 });
-      tasks.push({ issueKey: "ADM-20", hours: 1 });
       tasks.push({ issueKey: "ADM-16", hours: 1 });
       tasks.push({ issueKey: "ADM-18", hours: 1 });
     }
