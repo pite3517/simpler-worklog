@@ -333,7 +333,6 @@ function ceremonyTasksForDate(d) {
     if (weekday === 1) {
       tasks.push({ issueKey: "ADM-17", hours: 0.25 });
       tasks.push({ issueKey: "ADM-18", hours: 0.5 });
-      tasks.push({ issueKey: "ADM-19", hours: 1 });
     } else if (weekday === 2 || weekday === 4) {
       tasks.push({ issueKey: "ADM-17", hours: 0.25 });
     } else if (weekday === 5) {
