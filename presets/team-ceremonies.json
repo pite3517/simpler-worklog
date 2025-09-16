@@ -1,0 +1,95 @@
+{
+  "teams": {
+    "sally": {
+      "name": "Sally Team",
+      "week1OfSprint": {
+        "monday": [
+          {"issueKey": "ADM-6", "hours": 1},
+          {"issueKey": "ADM-17", "hours": 0.25},
+          {"issueKey": "ADM-18", "hours": 0.5}
+        ],
+        "tuesday": [
+          {"issueKey": "ADM-6", "hours": 1},
+          {"issueKey": "ADM-17", "hours": 0.25}
+        ],
+        "wednesday": [
+          {"issueKey": "ADM-6", "hours": 1}
+        ],
+        "thursday": [
+          {"issueKey": "ADM-6", "hours": 1},
+          {"issueKey": "ADM-17", "hours": 0.25}
+        ],
+        "friday": [
+          {"issueKey": "ADM-6", "hours": 1},
+          {"issueKey": "ADM-17", "hours": 0.25}
+        ]
+      },
+      "week2OfSprint": {
+        "monday": [
+          {"issueKey": "ADM-6", "hours": 1}
+        ],
+        "tuesday": [
+          {"issueKey": "ADM-6", "hours": 1},
+          {"issueKey": "ADM-17", "hours": 0.25}
+        ],
+        "wednesday": [
+          {"issueKey": "ADM-6", "hours": 1}
+        ],
+        "thursday": [
+          {"issueKey": "ADM-6", "hours": 1},
+          {"issueKey": "ADM-17", "hours": 0.25}
+        ],
+        "friday": [
+          {"issueKey": "ADM-6", "hours": 1},
+          {"issueKey": "ADM-17", "hours": 0.25},
+          {"issueKey": "ADM-16", "hours": 1},
+          {"issueKey": "ADM-18", "hours": 1}
+        ]
+      }
+    },
+    "pangyo": {
+      "name": "Pangyo Team",
+      "week1OfSprint": {
+        "monday": [
+          {"issueKey": "DEV-100", "hours": 0.5},
+          {"issueKey": "DEV-101", "hours": 0.25},
+          {"issueKey": "DEV-102", "hours": 1}
+        ],
+        "tuesday": [
+          {"issueKey": "DEV-100", "hours": 0.5}
+        ],
+        "wednesday": [
+          {"issueKey": "DEV-100", "hours": 0.5},
+          {"issueKey": "DEV-101", "hours": 0.25}
+        ],
+        "thursday": [
+          {"issueKey": "DEV-100", "hours": 0.5}
+        ],
+        "friday": [
+          {"issueKey": "DEV-100", "hours": 0.5},
+          {"issueKey": "DEV-101", "hours": 0.25}
+        ]
+      },
+      "week2OfSprint": {
+        "monday": [
+          {"issueKey": "DEV-100", "hours": 0.5},
+          {"issueKey": "DEV-101", "hours": 0.25}
+        ],
+        "tuesday": [
+          {"issueKey": "DEV-100", "hours": 0.5}
+        ],
+        "wednesday": [
+          {"issueKey": "DEV-100", "hours": 0.5},
+          {"issueKey": "DEV-101", "hours": 0.25}
+        ],
+        "thursday": [
+          {"issueKey": "DEV-100", "hours": 0.5}
+        ],
+        "friday": [
+          {"issueKey": "DEV-100", "hours": 0.5},
+          {"issueKey": "DEV-101", "hours": 0.25}
+        ]
+      }
+    }
+  }
+}
