@@ -38,7 +38,7 @@
                     <input
                       :value="ceremony.issueKey"
                       type="text"
-                      placeholder="LM-xxxxx"
+                      placeholder="ADM-xx"
                       class="input input-sm input-bordered w-full pr-6"
                       @input="updateIssueKey(index, $event.target.value)"
                       @focus="onIssueKeyFocus(index)"

@@ -164,7 +164,7 @@
           <input
             v-model="activeIssueSearch"
             type="text"
-            placeholder="Search issues..."
+            placeholder="Search in my active issues"
             class="input input-xs input-bordered w-full pr-6"
           >
           <button
@@ -248,7 +248,7 @@
             ref="manualInput"
             v-model="issueInput"
             type="text"
-            placeholder="LM-xxxxx or URL"
+            placeholder="Search for issues or paste issue URL"
             class="input input-sm input-bordered flex-1 min-w-40"
             @keyup.enter.prevent="addManual"
             @paste="onPasteIssue"
