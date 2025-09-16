@@ -62,7 +62,7 @@
                       @focus="onIssueFocus()"
                       @blur="onIssueBlur(event)"
                       @keyup.enter="validateIssueKey(event)"
-                    />
+                    >
 
                     <!-- Issue summary display -->
                     <div
@@ -73,7 +73,7 @@
                         v-if="event.issueType"
                         :src="issueTypeIcon(event.issueType)"
                         class="w-3 h-3"
-                      />
+                      >
                       <span class="truncate">{{ event.issueSummary }}</span>
                     </div>
 
@@ -100,7 +100,7 @@
                           v-if="suggestion.issueType"
                           :src="issueTypeIcon(suggestion.issueType)"
                           class="w-4 h-4"
-                        />
+                        >
                         <span class="font-mono font-semibold">{{
                           suggestion.key
                         }}</span>
@@ -285,9 +285,8 @@ const debouncedSearch = debounce(async (event, term) => {
         jql: `summary ~ "${term}*" AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
         fields: ["summary", "issuetype"],
         maxResults: 10,
-        startAt: 0,
       };
-      const res = await jiraFetch("rest/api/3/search", {
+      const res = await jiraFetch("rest/api/3/search/jql", {
         method: "POST",
         body: JSON.stringify(body),
       });

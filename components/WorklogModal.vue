@@ -98,17 +98,52 @@
 
       <!-- Sprint Ceremonies presets -->
       <div class="mt-6 space-y-2">
-        <h4 class="font-semibold text-sm">Ceremonies</h4>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <h4 class="font-semibold text-sm">Ceremonies</h4>
           <button
-            v-for="p in presets"
-            :key="p.key"
-            class="btn btn-xs btn-outline"
-            @click="onPreset(p)"
+            class="btn btn-xs btn-ghost p-0 cursor-pointer"
+            title="Configure ceremony durations"
+            @click="showCeremonyDurationModal = true"
           >
-            {{ p.label }}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-4 h-4 text-gray-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
           </button>
         </div>
+        <ClientOnly>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="p in presets"
+              :key="p.key"
+              class="btn btn-xs btn-outline"
+              @click="onPreset(p)"
+            >
+              {{ p.label }}
+            </button>
+          </div>
+          <template #fallback>
+            <div class="flex flex-wrap gap-2">
+              <span class="loading loading-spinner text-primary" />
+            </div>
+          </template>
+        </ClientOnly>
 
         <!-- Common Presets -->
         <h4 class="font-semibold text-sm mt-4">Commons</h4>
@@ -124,12 +159,41 @@
         </div>
 
         <h4 class="font-semibold text-sm mt-4">My Active Issues</h4>
+        <!-- Client-side search for active issues -->
+        <div class="mb-2 relative">
+          <input
+            v-model="activeIssueSearch"
+            type="text"
+            placeholder="Search issues..."
+            class="input input-xs input-bordered w-full pr-6"
+          >
+          <button
+            v-if="activeIssueSearch"
+            class="absolute right-1 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs p-0 w-4 h-4 min-h-4"
+            @click="activeIssueSearch = ''"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
         <ul
           ref="issuesList"
           class="border rounded max-h-50 overflow-y-auto mb-2 text-sm"
         >
           <li
-            v-for="iss in activeIssues"
+            v-for="iss in filteredActiveIssues"
             :key="iss.key"
             class="px-2 py-1 cursor-pointer hover:bg-base-200 flex gap-2 items-center"
             @click="onIssueSelect(iss)"
@@ -145,6 +209,14 @@
           <!-- No active issues fallback -->
           <li
             v-if="
+              filteredActiveIssues.length === 0 && activeIssues.length > 0
+            "
+            class="p-2 text-center text-sm opacity-60"
+          >
+            No issues match your search.
+          </li>
+          <li
+            v-else-if="
               activeIssues.length === 0 &&
               pageStart >= issuesTotal &&
               !loadingMore
@@ -154,8 +226,9 @@
             No active issues found.
           </li>
           <!-- Sentinel row for IntersectionObserver. Shows spinner while loading -->
+          <!-- Only show when not actively searching to prevent infinite scroll during filtering -->
           <li
-            v-if="pageStart < issuesTotal"
+            v-if="pageStart < issuesTotal && !activeIssueSearch.trim()"
             ref="loadMoreTrigger"
             class="px-2 py-1 text-center"
           >
@@ -271,6 +344,13 @@
       </div>
     </div>
   </dialog>
+
+  <!-- Ceremony Duration Configuration Modal -->
+  <CeremonyDurationModal
+    :visible="showCeremonyDurationModal"
+    @close="showCeremonyDurationModal = false"
+    @saved="onCeremonyDurationSaved"
+  />
 </template>
 
 <script setup lang="ts">
@@ -296,13 +376,20 @@ import debounce from "lodash.debounce";
 import { useFocus } from "@vueuse/core";
 import { onBeforeRouteLeave } from "vue-router";
 import { useSavingIndicator } from "~/composables/useSavingIndicator";
+import { useCeremonyDuration } from "~/composables/useCeremonyDuration";
 
 // Initialise Day.js with timezone support
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(weekOfYear);
 
-const props = defineProps(["visible", "date"]);
+const props = defineProps({
+  visible: Boolean,
+  date: {
+    type: [String, Date, null],
+    default: null,
+  },
+});
 const emit = defineEmits(["close"]);
 
 const { visible } = toRefs(props);
@@ -315,11 +402,17 @@ const manualError = ref("");
 const unsaved = ref(false);
 const { saving } = useSavingIndicator();
 
+// Ceremony duration configuration
+const { ceremonyDurations, hydrateFromLocalStorage } = useCeremonyDuration();
+const showCeremonyDurationModal = ref(false);
+
 // Active issues pagination state
 const activeIssues = ref([]);
 const issuesTotal = ref(0);
 const pageStart = ref(0);
-const pageSize = 10;
+const nextPageToken = ref(null);
+const pageSize = 100;
+const activeIssueSearch = ref("");
 
 // Infinite-scroll state
 const loadingMore = ref(false);
@@ -336,6 +429,7 @@ const skipNextLookup = ref(false);
 const suggestionPageStart = ref(0);
 const suggestionPageSize = 10;
 const suggestionTotal = ref(0);
+const suggestionNextToken = ref(null);
 const suggestionLoadingMore = ref(false);
 const suggestionsLoadMoreTrigger = ref(null);
 let suggestionsObserver = null;
@@ -405,9 +499,9 @@ const debouncedLookup = debounce(async (term) => {
         jql: `summary ~ "${term}*" AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
         fields: ["summary", "issuetype"],
         maxResults: suggestionPageSize,
-        startAt: suggestionPageStart.value,
+        ...(suggestionPageStart.value > 0 && suggestionNextToken.value ? { nextPageToken: suggestionNextToken.value } : {}),
       };
-      const res = await jiraFetch("rest/api/3/search", {
+      const res = await jiraFetch("rest/api/3/search/jql", {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -417,8 +511,23 @@ const debouncedLookup = debounce(async (term) => {
           summary: i.fields.summary,
           issueType: i.fields.issuetype?.name,
         })) ?? [];
-      suggestionTotal.value = res.total ?? suggestions.value.length;
+      // Handle pagination consistently with the new API format
+      if (Object.hasOwn(res, 'isLast')) {
+        // New API format: use isLast to determine if there are more results
+        if (res.isLast || !res.nextPageToken) {
+          // No more results available OR no token for next page
+          suggestionTotal.value = suggestions.value.length;
+        } else {
+          // More results available and we have a token
+          suggestionTotal.value = Number.MAX_SAFE_INTEGER;
+        }
+      } else {
+        // Fallback for old format
+        suggestionTotal.value = res.total ?? suggestions.value.length;
+      }
+      
       suggestionPageStart.value += suggestions.value.length;
+      suggestionNextToken.value = res.nextPageToken || null;
       // Reset single search result until exact key chosen
       searchedIssue.value = null;
     }
@@ -434,12 +543,26 @@ const debouncedLookup = debounce(async (term) => {
 const formattedDate = computed(() => {
   if (!props.date) return "";
   const d = dayjs(props.date);
+  if (!d.isValid()) return "";
   const weekNo = d.week();
   const weekLabel = weekNo % 2 === 1 ? "2nd Week" : "1st Week";
   return `${d.format("ddd, DD MMM")} (${weekLabel})`;
 });
 
 const displayedLogs = computed(() => logs.value.filter((l) => !l.deleted));
+
+// Filtered active issues based on client-side search
+const filteredActiveIssues = computed(() => {
+  if (!activeIssueSearch.value.trim()) {
+    return activeIssues.value;
+  }
+  
+  const searchTerm = activeIssueSearch.value.toLowerCase().trim();
+  return activeIssues.value.filter((issue) => 
+    issue.key.toLowerCase().includes(searchTerm) ||
+    issue.summary.toLowerCase().includes(searchTerm)
+  );
+});
 
 const totalHours = computed(() => currentTotalHours());
 
@@ -469,7 +592,14 @@ onMounted(() => {
   if (visible.value && !dlg.value.open) {
     dlg.value.showModal();
   }
-  prefetchPresetSummaries();
+  
+  // Hydrate ceremony durations from localStorage after client-side mount
+  hydrateFromLocalStorage();
+  
+  // Prefetch preset summaries after hydration
+  nextTick(() => {
+    prefetchPresetSummaries();
+  });
 
   // Observe sentinel rows for infinite scroll in both Active Issues and Suggestions lists
   watch(
@@ -536,15 +666,17 @@ async function fetchLogs() {
   }
 }
 
-// Static preset definitions
-const presets = [
-  { label: "Daily Stand-up", hours: 0.25, issueKey: "ADM-17" },
-  { label: "Health Check", hours: 0.5, issueKey: "ADM-18" },
-  { label: "Grooming", hours: 1, issueKey: "ADM-19" },
-  { label: "Knowledge Sharing", hours: 1, issueKey: "ADM-20" },
-  { label: "Planning", hours: 1, issueKey: "ADM-16" },
-  { label: "Retrospective", hours: 1, issueKey: "ADM-18" },
-];
+// Dynamic preset definitions from ceremony duration configuration
+const presets = computed(() => {
+  // Ensure ceremonyDurations.value is always an array to prevent iteration errors
+  const durations = Array.isArray(ceremonyDurations.value) ? ceremonyDurations.value : [];
+  return durations.map(ceremony => ({
+    label: ceremony.label,
+    hours: ceremony.hours,
+    issueKey: ceremony.issueKey,
+    key: ceremony.issueKey, // Add key property for v-for loop
+  }));
+});
 
 // Common presets that pre-fill manual section (no immediate add)
 const commonPresets = [
@@ -566,9 +698,14 @@ const commonPresets = [
 
 async function prefetchPresetSummaries() {
   if (import.meta.server) return;
+  
+  // Safely get presets value and ensure it's an array
+  const presetsValue = Array.isArray(presets.value) ? presets.value : [];
+  const commonPresetsValue = Array.isArray(commonPresets) ? commonPresets : [];
+  
   await Promise.all(
-    [...presets, ...commonPresets]
-      .filter((p) => p.issueKey)
+    [...presetsValue, ...commonPresetsValue]
+      .filter((p) => p && p.issueKey)
       .map(async (p) => {
         try {
           if (presetSummaries[p.issueKey]) return;
@@ -587,16 +724,19 @@ async function prefetchPresetSummaries() {
 async function loadActiveIssues(append = false) {
   try {
     if (append) loadingMore.value = true;
+    // Use the new /search/jql endpoint format as per official documentation
     const body = {
-      jql: `assignee = currentUser() AND updated >= -30d AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
+      jql: `assignee = currentUser() AND updated >= -60d AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
       fields: ["summary", "issuetype"],
       maxResults: pageSize,
-      startAt: pageStart.value,
+      // Note: The new endpoint uses different pagination - we'll start with no token for first page
+      ...(append && nextPageToken.value ? { nextPageToken: nextPageToken.value } : {}),
     };
-    const data = await jiraFetch("rest/api/3/search", {
+    const data = await jiraFetch("rest/api/3/search/jql", {
       method: "POST",
       body: JSON.stringify(body),
     });
+    
     const newItems =
       data.issues?.map((i) => ({
         key: i.key,
@@ -604,14 +744,48 @@ async function loadActiveIssues(append = false) {
         issueType: i.fields.issuetype?.name,
       })) ?? [];
 
-    if (append) {
-      activeIssues.value.push(...newItems);
-    } else {
-      activeIssues.value = newItems;
+    // Safety check: if we're appending but got no new items, stop pagination
+    if (append && newItems.length === 0) {
+      issuesTotal.value = activeIssues.value.length;
+      return;
     }
 
-    issuesTotal.value = data.total ?? activeIssues.value.length;
-    pageStart.value += newItems.length;
+    let uniqueItemsAdded = 0;
+    if (append) {
+      // Deduplicate issues by key to prevent duplicates
+      const existingKeys = new Set(activeIssues.value.map(issue => issue.key));
+      const uniqueNewItems = newItems.filter(item => !existingKeys.has(item.key));
+      uniqueItemsAdded = uniqueNewItems.length;
+      activeIssues.value.push(...uniqueNewItems);
+    } else {
+      activeIssues.value = newItems;
+      uniqueItemsAdded = newItems.length;
+      pageStart.value = 0;
+    }
+
+    // Update pagination for the new API
+    nextPageToken.value = data.nextPageToken || null;
+    
+    // Handle both old 'total' format and new 'isLast' format
+    if (Object.hasOwn(data, 'isLast')) {
+      // New API format: use isLast to determine if there are more results
+      if (data.isLast || !data.nextPageToken) {
+        // No more results available OR no token for next page
+        issuesTotal.value = activeIssues.value.length;
+      } else {
+        // More results available and we have a token
+        issuesTotal.value = Number.MAX_SAFE_INTEGER;
+      }
+    } else {
+      // Fallback for old format or if total is provided
+      issuesTotal.value = data.total ?? activeIssues.value.length;
+    }
+    
+    if (!append) {
+      pageStart.value = uniqueItemsAdded;
+    } else {
+      pageStart.value += uniqueItemsAdded;
+    }
   } catch (err) {
     console.error(err);
   } finally {
@@ -623,6 +797,8 @@ async function loadActiveIssues(append = false) {
 async function loadMore() {
   if (loadingMore.value) return;
   if (pageStart.value >= issuesTotal.value) return;
+  // Don't load more when actively searching (client-side filtering)
+  if (activeIssueSearch.value.trim()) return;
   await loadActiveIssues(true);
 }
 
@@ -634,7 +810,23 @@ watch(
       pageStart.value = 0;
       activeIssues.value = [];
       issuesTotal.value = 0;
+      nextPageToken.value = null;
       loadActiveIssues();
+    }
+  }
+);
+
+// Watch for search clear to potentially trigger more loading if needed
+watch(
+  () => activeIssueSearch.value,
+  (newVal, oldVal) => {
+    // If user cleared the search (had text, now empty)
+    if (oldVal && oldVal.trim() && !newVal.trim()) {
+      // Check if we have few enough items that we might need to load more
+      // This helps when user searches, then clears, and viewport isn't full
+      if (activeIssues.value.length < 20 && pageStart.value < issuesTotal.value && !loadingMore.value) {
+        loadMore();
+      }
     }
   }
 );
@@ -1029,7 +1221,9 @@ function resetModalState() {
   pageStart.value = 0;
   activeIssues.value = [];
   issuesTotal.value = 0;
+  nextPageToken.value = null;
   loadingMore.value = false;
+  activeIssueSearch.value = "";
 
   if (loadObserver) {
     loadObserver.disconnect();
@@ -1044,6 +1238,7 @@ function resetModalState() {
   suggestionPageStart.value = 0;
   suggestionTotal.value = 0;
   suggestionLoadingMore.value = false;
+  suggestionNextToken.value = null;
   currentSuggestionTerm.value = "";
   if (suggestionsObserver) {
     suggestionsObserver.disconnect();
@@ -1121,9 +1316,9 @@ async function loadMoreSuggestions() {
       jql: `summary ~ "${currentSuggestionTerm.value}*" AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
       fields: ["summary", "issuetype"],
       maxResults: suggestionPageSize,
-      startAt: suggestionPageStart.value,
+      ...(suggestionPageStart.value > 0 && suggestionNextToken.value ? { nextPageToken: suggestionNextToken.value } : {}),
     };
-    const res = await jiraFetch("rest/api/3/search", {
+    const res = await jiraFetch("rest/api/3/search/jql", {
       method: "POST",
       body: JSON.stringify(body),
     });
@@ -1133,10 +1328,33 @@ async function loadMoreSuggestions() {
         summary: i.fields.summary,
         issueType: i.fields.issuetype?.name,
       })) ?? [];
+      
+    // Safety check: if we got no new items, stop pagination
+    if (newItems.length === 0) {
+      suggestionTotal.value = suggestions.value.length;
+      return;
+    }
+    
     suggestions.value.push(...newItems);
 
     suggestionPageStart.value += newItems.length;
-    suggestionTotal.value = res.total ?? suggestionTotal.value;
+    
+    // Handle pagination consistently with the new API format
+    if (Object.hasOwn(res, 'isLast')) {
+      // New API format: use isLast to determine if there are more results
+      if (res.isLast || !res.nextPageToken) {
+        // No more results available OR no token for next page
+        suggestionTotal.value = suggestions.value.length;
+      } else {
+        // More results available and we have a token
+        suggestionTotal.value = Number.MAX_SAFE_INTEGER;
+      }
+    } else {
+      // Fallback for old format
+      suggestionTotal.value = res.total ?? suggestionTotal.value;
+    }
+    
+    suggestionNextToken.value = res.nextPageToken || null;
   } catch (err) {
     console.error(err);
   } finally {
@@ -1155,6 +1373,12 @@ function adjustDurationToLimit() {
   } else {
     durationReduced.value = false;
   }
+}
+
+// Handler for ceremony duration configuration saved
+function onCeremonyDurationSaved() {
+  // The presets computed property will automatically update
+  // when ceremonyDurations changes, so no additional action needed
 }
 
 // Utility: convert decimal hours to "H:MMh" string (e.g., 1.5 → "1:30h")

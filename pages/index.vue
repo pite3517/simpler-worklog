@@ -15,7 +15,7 @@
           </button>
         </div>
         <button
-          class="btn btn-primary mr-8"
+          class="btn btn-primary mr-4"
           title="How to use Fill from Calendar"
           @click="showCalInfo = true"
         >
@@ -27,7 +27,7 @@
           @click="confirmAutoFill"
         >
           <Icon name="lucide:zap" class="w-4 h-4" />
-          Auto-Fill Ceremonies (Sally)
+          Auto-Fill Ceremonies
         </button>
         <input
           ref="fileInput"
@@ -49,6 +49,14 @@
       :visible="showConfigModal"
       @close="showConfigModal = false"
       @saved="onConfigSaved"
+    />
+
+    <TeamSelectionModal
+      :visible="showTeamSelectionModal"
+      :available-teams="availableTeams"
+      :default-selected-team="savedTeam"
+      @close="showTeamSelectionModal = false"
+      @confirm="onTeamSelected"
     />
 
     <dialog v-if="autoFilling" class="modal modal-open">
@@ -128,7 +136,8 @@
 import CalendarMonth from "~/components/CalendarMonth.vue";
 import WorklogModal from "~/components/WorklogModal.vue";
 import CeremonyConfigModal from "~/components/CeremonyConfigModal.vue";
-import { ref, computed } from "vue";
+import TeamSelectionModal from "~/components/TeamSelectionModal.vue";
+import { ref, computed, onMounted } from "vue";
 import { jiraFetch } from "~/composables/useJiraApi";
 import { useWorklogStore } from "~/composables/useWorklogStore";
 import { useToastStore } from "~/composables/useToastStore";
@@ -140,6 +149,8 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { useJiraCredentials } from "~/composables/useJiraCredentials";
 import { useCalendarLoading } from "~/composables/useCalendarLoading";
 import { useCeremonyConfig } from "~/composables/useCeremonyConfig";
+import { useTeamCeremonies } from "~/composables/useTeamCeremonies";
+import { useSelectedTeam } from "~/composables/useSelectedTeam";
 import ICAL from "ical.js";
 import { setIcsContent, clearIcsContent } from "~/composables/useIcsStorage";
 
@@ -157,6 +168,7 @@ const showWorklog = ref(false);
 const autoFilling = ref(false);
 const showCalInfo = ref(false);
 const showConfigModal = ref(false);
+const showTeamSelectionModal = ref(false);
 const calRef = ref(null);
 const fileInput = ref(null);
 
@@ -170,6 +182,20 @@ const {
   // setConfigs,
   setEventData,
 } = useCeremonyConfig();
+
+// Team ceremonies configuration
+const {
+  availableTeams,
+  loadTeamsConfig,
+  getCeremonyTasksForDate
+} = useTeamCeremonies();
+
+// Selected team storage
+const {
+  selectedTeam: savedTeam,
+  loadSavedTeam,
+  saveTeam
+} = useSelectedTeam();
 
 // Check if Jira credentials are present
 const { email, token } = useJiraCredentials();
@@ -186,6 +212,12 @@ const hasCreds = computed(() => {
 // Shared calendar loading flag
 const { loading: calendarLoading } = useCalendarLoading();
 
+// Initialize team ceremonies config and load saved team on component mount
+onMounted(() => {
+  loadTeamsConfig();
+  loadSavedTeam();
+});
+
 function onDaySelected(date) {
   if (!hasCreds.value) return;
   selectedDate.value = date;
@@ -195,18 +227,24 @@ function onDaySelected(date) {
 // ---------------- Auto-Fill Ceremonies -------------------------------------
 function confirmAutoFill() {
   if (autoFilling.value || !hasCreds.value) return;
-  const anchorDate = calRef.value?.getAnchor?.() ?? new Date();
-  const monthLabel = dayjs(anchorDate).format("MMM YYYY");
-  if (
-    confirm(
-      `This will automatically add ceremony worklogs for ${monthLabel}. This is the legacy method. Continue?`
-    )
-  ) {
-    autoFillCeremonies();
+  
+  // Load teams config if not already loaded
+  if (availableTeams.value.length === 0) {
+    loadTeamsConfig();
   }
+  
+  // Show team selection modal
+  showTeamSelectionModal.value = true;
 }
 
-async function autoFillCeremonies() {
+function onTeamSelected(teamKey) {
+  showTeamSelectionModal.value = false;
+  // Save the selected team for future use
+  saveTeam(teamKey);
+  autoFillCeremonies(teamKey);
+}
+
+async function autoFillCeremonies(teamKey) {
   autoFilling.value = true;
   const anchorDate = calRef.value?.getAnchor?.() ?? new Date();
   const monthStart = dayjs(anchorDate).startOf("month");
@@ -228,7 +266,7 @@ async function autoFillCeremonies() {
       const weekday = d.day(); // 0 = Sun .. 6 = Sat
       if (weekday === 0 || weekday === 6) continue; // skip weekends
 
-      const tasks = ceremonyTasksForDate(d);
+      const tasks = getCeremonyTasksForDate(d, teamKey);
       if (tasks.length === 0) continue;
 
       const existing = getLogs(d.toDate());
@@ -320,29 +358,7 @@ async function autoFillCeremonies() {
   }
 }
 
-function ceremonyTasksForDate(d) {
-  const tasks = [{ issueKey: "ADM-6", hours: 1 }]; // All days
-  const weekEven = d.isoWeek() % 2 === 0;
-  const weekday = d.day();
-
-  if (weekEven) {
-    if (weekday === 2 || weekday === 4 || weekday === 5) {
-      tasks.push({ issueKey: "ADM-17", hours: 0.25 });
-    }
-  } else {
-    if (weekday === 1) {
-      tasks.push({ issueKey: "ADM-17", hours: 0.25 });
-      tasks.push({ issueKey: "ADM-18", hours: 0.5 });
-    } else if (weekday === 2 || weekday === 4) {
-      tasks.push({ issueKey: "ADM-17", hours: 0.25 });
-    } else if (weekday === 5) {
-      tasks.push({ issueKey: "ADM-17", hours: 0.25 });
-      tasks.push({ issueKey: "ADM-16", hours: 1 });
-      tasks.push({ issueKey: "ADM-18", hours: 1 });
-    }
-  }
-  return tasks;
-}
+// Ceremony tasks are now handled by the useTeamCeremonies composable
 
 function createWorklog(issueKey, hours, dateObj) {
   const startedStr = dayjs(dateObj)
