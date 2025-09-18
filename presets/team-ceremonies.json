@@ -77,7 +77,6 @@
           {"issueKey": "ADM-19", "hours": 0.5}
         ],
         "thursday": [
-          {"issueKey": "ADM-19", "hours": 4}
         ],
         "friday": [
           {"issueKey": "ADM-17", "hours": 0.5},
