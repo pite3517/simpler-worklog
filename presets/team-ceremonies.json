@@ -73,7 +73,7 @@
         "tuesday": [
         ],
         "wednesday": [
-          {"issueKey": "ADM-6", "hours": 1},
+          {"issueKey": "ADM-17", "hours": 0.5},
           {"issueKey": "ADM-19", "hours": 0.5}
         ],
         "thursday": [
