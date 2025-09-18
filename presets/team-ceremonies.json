@@ -46,6 +46,44 @@
           {"issueKey": "ADM-18", "hours": 1}
         ]
       }
+    },
+    "Koya": {
+      "name": "Koya Team",
+      "week1OfSprint": {
+        "monday": [
+          {"issueKey": "ADM-16", "hours": 1}
+        ],
+        "tuesday": [
+        ],
+        "wednesday": [
+          {"issueKey": "ADM-17", "hours": 0.5}
+        ],
+        "thursday": [
+          {"issueKey": "ADM-17", "hours": 0.5},
+          {"issueKey": "ADM-20", "hours": 0.5}
+        ],
+        "friday": [
+          {"issueKey": "ADM-17", "hours": 0.5}
+        ]
+      },
+      "week2OfSprint": {
+        "monday": [
+          {"issueKey": "ADM-17", "hours": 0.5}
+        ],
+        "tuesday": [
+        ],
+        "wednesday": [
+          {"issueKey": "ADM-6", "hours": 1},
+          {"issueKey": "ADM-19", "hours": 0.5}
+        ],
+        "thursday": [
+          {"issueKey": "ADM-19", "hours": 4}
+        ],
+        "friday": [
+          {"issueKey": "ADM-17", "hours": 0.5},
+          {"issueKey": "ADM-18", "hours": 2}
+        ]
+      }
     }
   }
 }
