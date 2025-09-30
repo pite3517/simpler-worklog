@@ -726,7 +726,7 @@ async function loadActiveIssues(append = false) {
     if (append) loadingMore.value = true;
     // Use the new /search/jql endpoint format as per official documentation
     const body = {
-      jql: `assignee = currentUser() AND updated >= -60d AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
+      jql: `(assignee = currentUser() OR "QA" = currentUser()) AND updated >= -60d AND issuetype in (Epic, Task, Story, Bug, "Production Bug", "Sub-task", Subtask) ORDER BY updated DESC`,
       fields: ["summary", "issuetype"],
       maxResults: pageSize,
       // Note: The new endpoint uses different pagination - we'll start with no token for first page
